@@ -1,0 +1,88 @@
+/* Dynamic Theme CSS for Photoshoot Studio */
+:root {
+  --theme-primary: #e5c158;
+  --theme-primary-hover: #f3d88b;
+  --theme-accent: #8b5cf6;
+  --theme-bg: #07060a;
+  --theme-card: #12101b;
+  --theme-text: #f3f4f6;
+  --theme-text-muted: #9ca3af;
+  --theme-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Dynamic theme background and text colors */
+body.dynamic-theme {
+  background-color: var(--theme-bg) !important;
+  color: var(--theme-text) !important;
+  min-height: 100vh;
+}
+
+.theme-bg {
+  background-color: var(--theme-bg) !important;
+}
+
+.theme-card {
+  background-color: var(--theme-card) !important;
+  border-color: var(--theme-border) !important;
+}
+
+.theme-primary-text {
+  color: var(--theme-primary) !important;
+}
+
+.theme-primary-bg {
+  background-color: var(--theme-primary) !important;
+}
+
+.theme-primary-border {
+  border-color: var(--theme-primary) !important;
+}
+
+.theme-accent-text {
+  color: var(--theme-accent) !important;
+}
+
+.theme-accent-bg {
+  background-color: var(--theme-accent) !important;
+}
+
+.theme-accent-border {
+  border-color: var(--theme-accent) !important;
+}
+
+/* Dynamic button with primary gradient */
+.btn-primary-dynamic {
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-accent) 100%) !important;
+  color: #000000 !important;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-primary-dynamic:hover {
+  filter: brightness(1.12);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(229, 193, 88, 0.3);
+}
+
+.btn-gold-dynamic {
+  background-color: var(--theme-primary) !important;
+  color: #0b0f17 !important;
+  font-weight: 600;
+  transition: all 0.25s ease;
+}
+
+.btn-gold-dynamic:hover {
+  background-color: var(--theme-primary-hover) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -4px rgba(229, 193, 88, 0.4);
+}
+
+/* Dynamic glow */
+.theme-glow {
+  box-shadow: 0 0 35px -5px var(--theme-primary);
+}
+
+/* Custom Scrollbar styled with dynamic theme */
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-primary) !important;
+}
