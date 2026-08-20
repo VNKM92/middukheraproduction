@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
     'payment_status',
     'amount',
     'notes',
+    'customer_phone',
     'razorpay_order_id',
     'razorpay_payment_id',
     'razorpay_signature'
@@ -32,5 +33,15 @@ class Booking extends Model
     public function payments()
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    public function latestTransaction()
+    {
+        return $this->hasOne(Transaction::class)->latestOfMany();
     }
 }

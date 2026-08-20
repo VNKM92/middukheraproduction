@@ -12,6 +12,10 @@ use App\Models\Package;
 use App\Models\Setting;
 use App\Models\Vendor;
 use App\Models\User;
+use App\Models\Transaction;
+use App\Models\SmsLog;
+use App\Models\WebhookLog;
+use App\Services\Sms\SmsManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -19,7 +23,7 @@ class AdminDashboardController extends Controller
 {
     public function index()
     {
-        $totalEarnings = Payment::where('status', 'captured')->sum('amount');
+        $totalEarnings = Transaction::where('status', 'captured')->sum('amount') ?: Payment::where('status', 'captured')->sum('amount');
         $totalBookings = Booking::count();
         $totalVisitors = Visitor::count();
         $totalPackages = Package::count();
@@ -27,7 +31,11 @@ class AdminDashboardController extends Controller
         $unreadMessagesCount = ContactMessage::where('status', 'unread')->count();
         
         $bookings = Booking::with(['user', 'package'])->latest()->get();
-        $payments = Payment::with('booking.user')->latest()->take(15)->get();
+        $payments = Payment::with('booking.user')->latest()->take(25)->get();
+        $transactions = Transaction::with(['booking.package', 'user'])->latest()->take(100)->get();
+        $smsLogs = SmsLog::latest()->take(50)->get();
+        $webhookLogs = WebhookLog::latest()->take(50)->get();
+
         $messages = ContactMessage::latest()->get();
         $blogs = Blog::latest()->get();
         $gallery = Gallery::latest()->get();
@@ -46,6 +54,9 @@ class AdminDashboardController extends Controller
             'unreadMessagesCount',
             'bookings',
             'payments',
+            'transactions',
+            'smsLogs',
+            'webhookLogs',
             'messages',
             'blogs',
             'gallery',
@@ -70,6 +81,29 @@ class AdminDashboardController extends Controller
         Setting::clearCache();
 
         return redirect()->back()->with('success', 'Site settings & theme colors saved successfully!');
+    }
+
+    /**
+     * Test SMS dispatch from admin settings
+     */
+    public function testSms(Request $request)
+    {
+        $request->validate([
+            'test_phone' => 'required|string|min:8|max:20',
+            'test_message' => 'required|string|max:500',
+        ]);
+
+        $result = SmsManager::dispatch(
+            phone: $request->test_phone,
+            message: $request->test_message,
+            templateKey: 'admin_test'
+        );
+
+        if ($result['success']) {
+            return redirect()->back()->with('success', 'Test SMS successfully dispatched! Check SMS logs below or check recipient device. ' . ($result['message'] ?? ''));
+        }
+
+        return redirect()->back()->with('error', 'Test SMS failed: ' . ($result['message'] ?? 'Unknown error occurred.'));
     }
 
     /**

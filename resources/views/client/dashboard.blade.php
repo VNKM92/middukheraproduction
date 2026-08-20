@@ -130,8 +130,12 @@
                         <!-- Notes & Receipt Details -->
                         <div class="p-4 rounded-2xl bg-white/5 border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
                             <div class="space-y-1">
+                                <div class="text-zinc-400">
+                                    <span>Txn Reference: </span>
+                                    <span class="text-cyan-400 font-mono font-bold">{{ $b->latestTransaction->transaction_ref ?? ('TRX-' . $b->id) }}</span>
+                                </div>
                                 <div class="text-zinc-400">Order ID: <span class="text-white font-mono">{{ $b->razorpay_order_id ?? 'N/A' }}</span></div>
-                                <div class="text-zinc-400">Payment ID: <span class="text-emerald-400 font-mono">{{ $b->razorpay_payment_id ?? 'Simulated / Pending' }}</span></div>
+                                <div class="text-zinc-400">Payment ID: <span class="text-emerald-400 font-mono">{{ $b->razorpay_payment_id ?? 'Pending / Simulated' }}</span></div>
                                 @if($b->notes)
                                     <div class="text-zinc-300 italic pt-1">Note: &ldquo;{{ $b->notes }}&rdquo;</div>
                                 @endif
@@ -147,5 +151,51 @@
             </div>
         @endif
     </div>
+
+    <!-- Client Payment Transactions Ledger -->
+    @if(isset($transactions) && $transactions->isNotEmpty())
+        <div class="space-y-4 pt-4 border-t border-white/10">
+            <h3 class="text-lg font-serif font-bold text-white flex items-center gap-2">
+                <i data-lucide="receipt" class="w-5 h-5 text-emerald-400"></i>
+                <span>Payment & Transaction History ({{ count($transactions) }})</span>
+            </h3>
+
+            <div class="site-card rounded-2xl border border-white/10 overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-zinc-300">
+                        <thead class="bg-white/5 border-b border-white/10 text-[11px] uppercase tracking-wider text-zinc-400 font-semibold">
+                            <tr>
+                                <th class="p-3.5">Transaction Ref</th>
+                                <th class="p-3.5">Package</th>
+                                <th class="p-3.5">Amount</th>
+                                <th class="p-3.5">Status</th>
+                                <th class="p-3.5">Payment Method</th>
+                                <th class="p-3.5">Date</th>
+                                <th class="p-3.5 text-right">Payment ID</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-white/5 font-mono">
+                            @foreach($transactions as $txn)
+                                @php $badge = $txn->status_badge; @endphp
+                                <tr class="hover:bg-white/[0.02]">
+                                    <td class="p-3.5 text-white font-bold">{{ $txn->transaction_ref }}</td>
+                                    <td class="p-3.5 font-sans">{{ $txn->booking->package->name ?? 'Photoshoot' }}</td>
+                                    <td class="p-3.5 text-emerald-400 font-bold font-sans">{{ $siteSettings['currency_symbol'] ?? '₹' }}{{ number_format($txn->amount) }}</td>
+                                    <td class="p-3.5 font-sans">
+                                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border {{ $badge['bg'] }} {{ $badge['text'] }} {{ $badge['border'] }}">
+                                            {{ $badge['label'] }}
+                                        </span>
+                                    </td>
+                                    <td class="p-3.5 uppercase text-zinc-400 font-sans text-[11px]">{{ $txn->payment_method ?: 'Razorpay' }}</td>
+                                    <td class="p-3.5 text-zinc-400 font-sans text-[11px]">{{ $txn->created_at->format('M j, Y') }}</td>
+                                    <td class="p-3.5 text-right text-zinc-400 text-[11px]">{{ $txn->razorpay_payment_id ?: 'Pending' }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
 @endsection

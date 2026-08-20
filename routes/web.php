@@ -28,6 +28,11 @@ Route::get('/package/{slug}/checkout', [BookingController::class, 'checkout'])->
 Route::post('/booking/store', [BookingController::class, 'store'])->name('booking.store');
 Route::post('/booking/callback', [BookingController::class, 'callback'])->name('booking.callback');
 
+// Phone / SMS OTP Verification Endpoints
+Route::post('/otp/send', [\App\Http\Controllers\OtpController::class, 'send'])->name('otp.send');
+Route::post('/otp/verify', [\App\Http\Controllers\OtpController::class, 'verify'])->name('otp.verify');
+Route::post('/otp/resend', [\App\Http\Controllers\OtpController::class, 'resend'])->name('otp.resend');
+
 // Client Dashboard
 Route::middleware(['auth'])->group(function () {
     Route::get('/client/dashboard', [ClientDashboardController::class, 'index'])->name('client.dashboard');
@@ -54,6 +59,7 @@ Route::prefix('admin')->middleware(['auth', \App\Http\Middleware\EnsureAdmin::cl
     // Dynamic Settings & Theme Color Customizer
     Route::post('/settings', [AdminDashboardController::class, 'saveSettings'])->name('admin.settings.save');
     Route::post('/settings/theme-preset', [AdminDashboardController::class, 'applyThemePreset'])->name('admin.settings.preset');
+    Route::post('/sms/test', [AdminDashboardController::class, 'testSms'])->name('admin.sms.test');
     
     // Bookings Management
     Route::post('/booking/{booking}/status', [AdminDashboardController::class, 'updateBookingStatus'])->name('admin.booking.updateStatus');

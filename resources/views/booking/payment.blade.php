@@ -6,13 +6,16 @@
         
         <!-- Status Icon -->
         <div class="w-16 h-16 rounded-2xl bg-theme-primary/15 border border-[var(--theme-primary)]/30 mx-auto flex items-center justify-center text-theme-primary shadow-lg shadow-[var(--theme-primary)]/20">
-            <i data-lucide="credit-card" class="w-8 h-8"></i>
+            <i data-lucide="shield-check" class="w-8 h-8"></i>
         </div>
 
         <div class="space-y-2">
-            <span class="text-xs font-bold uppercase tracking-widest text-theme-primary">Payment Confirmation</span>
+            <span class="text-xs font-bold uppercase tracking-widest text-theme-primary">Step 2 &bull; Razorpay Secure Checkout</span>
             <h1 class="text-3xl font-serif font-bold text-white">Complete Booking Deposit</h1>
-            <p class="text-xs text-zinc-400">Order Reference: <strong class="text-white font-mono">#{{ $booking->id }}</strong></p>
+            <p class="text-xs text-zinc-400">
+                Booking ID: <strong class="text-white font-mono">#{{ $booking->id }}</strong> &bull; 
+                Txn Ref: <strong class="text-cyan-400 font-mono">{{ $transaction->transaction_ref ?? ('TRX-' . $booking->id) }}</strong>
+            </p>
         </div>
 
         <!-- Warning Alert if applicable -->
@@ -37,6 +40,12 @@
                 <span class="text-zinc-400">Client Account:</span>
                 <span class="font-bold text-white">{{ $booking->user->name ?? 'Client' }} ({{ $booking->user->email ?? '' }})</span>
             </div>
+            @if($booking->customer_phone)
+                <div class="flex items-center justify-between">
+                    <span class="text-zinc-400">Contact / SMS Phone:</span>
+                    <span class="font-bold text-emerald-400">{{ $booking->customer_phone }}</span>
+                </div>
+            @endif
             <div class="pt-3 border-t border-white/10 flex items-center justify-between text-sm">
                 <span class="font-bold text-white">Total Amount Due:</span>
                 <span class="font-bold text-xl text-emerald-400">{{ $siteSettings['currency_symbol'] ?? '₹' }}{{ number_format($booking->amount) }}</span>
@@ -47,7 +56,7 @@
         @if($isMock)
             <div class="space-y-4 pt-2">
                 <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs leading-relaxed">
-                    <strong>Demo / Sandbox Checkout Active:</strong> Click the button below to instantly simulate a successful Razorpay payment capture and confirm your booking.
+                    <strong>Sandbox / Simulation Active:</strong> Instant sandbox mode is active. Click below to simulate an immediate Razorpay capture, dispatch SMS alerts, and confirm booking.
                 </div>
 
                 <form method="POST" action="{{ route('booking.callback') }}">
@@ -56,14 +65,14 @@
                     <input type="hidden" name="mock_payment" value="1" />
                     <button type="submit" class="w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-xl shadow-[var(--theme-primary)]/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition">
                         <i data-lucide="check-circle" class="w-4 h-4"></i>
-                        <span>Confirm & Simulate Instant Payment</span>
+                        <span>Confirm & Simulate Razorpay Payment</span>
                     </button>
                 </form>
             </div>
         @else
             <div class="pt-2">
                 <button id="rzp-button" class="w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-xl shadow-[var(--theme-primary)]/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition">
-                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    <i data-lucide="credit-card" class="w-4 h-4"></i>
                     <span>Pay {{ $siteSettings['currency_symbol'] ?? '₹' }}{{ number_format($booking->amount) }} via Razorpay</span>
                 </button>
 
@@ -71,7 +80,7 @@
                 <script>
                     const rzpOptions = {
                         key: "{{ $keyId }}",
-                        amount: "{{ $booking->amount * 100 }}",
+                        amount: "{{ (int) round($booking->amount * 100) }}",
                         currency: "INR",
                         name: "{{ $siteSettings['site_name'] ?? 'Lumina Studio' }}",
                         description: "Photoshoot Booking #{{ $booking->id }} - {{ $booking->package->name ?? 'Package' }}",
@@ -80,6 +89,7 @@
                         prefill: {
                             name: "{{ $booking->user->name ?? '' }}",
                             email: "{{ $booking->user->email ?? '' }}",
+                            contact: "{{ $booking->customer_phone ?? '' }}"
                         },
                         theme: {
                             color: "{{ $siteSettings['primary_color'] ?? '#E5C158' }}"
