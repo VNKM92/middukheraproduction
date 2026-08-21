@@ -82,7 +82,7 @@
                         key: "{{ $keyId }}",
                         amount: "{{ (int) round($booking->amount * 100) }}",
                         currency: "INR",
-                        name: "{{ $siteSettings['site_name'] ?? 'Lumina Studio' }}",
+                        name: "{{ $siteSettings['site_name'] ?? 'Middukhera Production' }}",
                         description: "Photoshoot Booking #{{ $booking->id }} - {{ $booking->package->name ?? 'Package' }}",
                         image: "{{ $siteSettings['hero_bg_image'] ?? '' }}",
                         order_id: "{{ $booking->razorpay_order_id }}",

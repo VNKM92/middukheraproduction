@@ -36,8 +36,8 @@ class FrontendController extends Controller
         $blogs = Blog::latest()->take(3)->get();
         $gallery = Gallery::latest()->take(6)->get();
 
-        $meta_title = config('app.name') . ' — Premium Photoshoot Studio';
-        $meta_description = 'Book premium photoshoot packages for weddings, fashion, portraits and events. Professional photographers, studios and styling.';
+        $meta_title = (config('app.name') ?: 'Middukhera Production') . ' — Luxury Photoshoot & Production House';
+        $meta_description = 'Book premium photoshoot packages for weddings, fashion, portraits and events with Middukhera Production. Instant Razorpay booking.';
         $meta_image = $packages->first()->image_path ?? asset('favicon.ico');
 
         return view('frontend.home', compact('packages', 'blogs', 'gallery', 'meta_title', 'meta_description', 'meta_image'));
@@ -95,13 +95,31 @@ class FrontendController extends Controller
 
         ContactMessage::create($request->all());
 
-        return redirect()->back()->with('success', 'Thank you! Your message has been sent successfully. We will get back to you shortly.');
+        return redirect()->back()->with('success', 'Thank you! Your message has been sent successfully. Our concierge will get back to you shortly.');
     }
 
     public function terms(Request $request)
     {
         $this->trackVisitor($request);
         return view('frontend.terms');
+    }
+
+    public function privacy(Request $request)
+    {
+        $this->trackVisitor($request);
+        return view('frontend.privacy');
+    }
+
+    public function refundPolicy(Request $request)
+    {
+        $this->trackVisitor($request);
+        return view('frontend.refund-policy');
+    }
+
+    public function shippingPolicy(Request $request)
+    {
+        $this->trackVisitor($request);
+        return view('frontend.shipping-policy');
     }
 
     public function disclaimer(Request $request)

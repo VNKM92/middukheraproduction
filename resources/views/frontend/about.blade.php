@@ -37,7 +37,7 @@
       <div class="lg:col-span-7 space-y-8 reveal reveal-right">
         <h2 class="font-serif text-3xl font-bold text-white">Our Creative Manifesto</h2>
         <p class="text-gray-400 font-light leading-relaxed">
-          Founded in 2018, Middukhera Studio emerged from a singular conviction: photography is not simply the recording of a scene; it is the curation of light and emotion to construct a legacy.
+          Founded in 2018, Middukhera Production emerged from a singular conviction: photography is not simply the recording of a scene; it is the curation of light and emotion to construct a legacy.
         </p>
 
         <!-- Pillars -->

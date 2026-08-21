@@ -320,7 +320,7 @@ function checkoutEngine() {
 
         handleSubmit(e) {
             // If phone verification is strictly required and user has not verified yet
-            @if(Setting::get('otp_verification_required', '0') == '1')
+            @if(\App\Models\Setting::get('otp_verification_required', '0') == '1')
                 if (!this.isPhoneVerified) {
                     e.preventDefault();
                     alert('Please verify your mobile number via OTP before proceeding to payment.');

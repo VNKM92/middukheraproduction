@@ -488,12 +488,12 @@
 
                     <div class="space-y-1">
                         <label class="text-xs font-semibold text-zinc-300">Logo Primary Text</label>
-                        <input type="text" name="logo_text" value="{{ $siteSettings['logo_text'] ?? 'LUMINA' }}" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-serif tracking-wider focus:border-theme-primary">
+                        <input type="text" name="logo_text" value="{{ $siteSettings['logo_text'] ?? 'MIDDUKHERA' }}" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm font-serif tracking-wider focus:border-theme-primary">
                     </div>
 
                     <div class="space-y-1">
                         <label class="text-xs font-semibold text-zinc-300">Logo Subtitle Tag</label>
-                        <input type="text" name="logo_sub" value="{{ $siteSettings['logo_sub'] ?? 'STUDIO' }}" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm tracking-widest uppercase focus:border-theme-primary">
+                        <input type="text" name="logo_sub" value="{{ $siteSettings['logo_sub'] ?? 'PRODUCTION' }}" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm tracking-widest uppercase focus:border-theme-primary">
                     </div>
 
                     <div class="space-y-1">
@@ -573,7 +573,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-1">
                         <label class="text-xs font-semibold text-zinc-300">Concierge Email</label>
-                        <input type="email" name="contact_email" value="{{ $siteSettings['contact_email'] ?? 'concierge@luminastudio.com' }}" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:border-theme-primary">
+                        <input type="email" name="contact_email" value="{{ $siteSettings['contact_email'] ?? 'contact@middukheraproduction.in' }}" class="w-full px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:border-theme-primary">
                     </div>
 
                     <div class="space-y-1">
@@ -1353,7 +1353,7 @@
                             </div>
                             <div class="space-y-1">
                                 <label class="text-[11px] text-zinc-400">Sender ID (DLT Header)</label>
-                                <input type="text" name="msg91_sender_id" value="{{ $allSettings['msg91_sender_id'] ?? 'LUMINA' }}" placeholder="e.g. LUMINA" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                                <input type="text" name="msg91_sender_id" value="{{ $allSettings['msg91_sender_id'] ?? 'MIDDUK' }}" placeholder="e.g. MIDDUK" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
                             </div>
                         </div>
                     </div>
@@ -1441,7 +1441,7 @@
 
                         <div class="space-y-1">
                             <label class="text-[11px] text-zinc-300 font-semibold">Message Content</label>
-                            <textarea name="test_message" rows="2" required class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">Hello from Lumina Studio! This is a test SMS dispatch from your Laravel Razorpay gateway engine.</textarea>
+                            <textarea name="test_message" rows="2" required class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">Hello from Middukhera Production! This is a test SMS dispatch from your Laravel Razorpay gateway engine.</textarea>
                         </div>
 
                         <button type="submit" class="w-full py-2.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-400 text-black shadow-md flex items-center justify-center gap-1.5 transition">

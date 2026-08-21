@@ -6,23 +6,23 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <!-- Dynamic SEO Meta Tags -->
-        <title>{{ $meta_title ?? $siteSettings['meta_title'] ?? config('app.name') }}</title>
-        <meta name="description" content="{{ $meta_description ?? $siteSettings['meta_description'] ?? 'Premium photoshoot studio offering wedding, fashion, portrait and event photography services.' }}">
-        <meta name="keywords" content="{{ $meta_keywords ?? $siteSettings['meta_keywords'] ?? 'photoshoot, studio, photography, wedding photography, fashion photography' }}">
+        <title>{{ $meta_title ?? $siteSettings['meta_title'] ?? 'Middukhera Production — Luxury Studio & Media Production' }}</title>
+        <meta name="description" content="{{ $meta_description ?? $siteSettings['meta_description'] ?? 'Middukhera Production is a premier photography and production studio offering wedding, fashion, portrait and event photography services.' }}">
+        <meta name="keywords" content="{{ $meta_keywords ?? $siteSettings['meta_keywords'] ?? 'Middukhera Production, photoshoot, studio, photography, wedding photography, fashion photography, Razorpay payment' }}">
         <link rel="canonical" href="{{ $meta_canonical ?? url()->current() }}" />
 
         <!-- Open Graph / Facebook -->
         <meta property="og:type" content="website" />
-        <meta property="og:site_name" content="{{ $siteSettings['site_name'] ?? config('app.name') }}" />
-        <meta property="og:title" content="{{ $meta_title ?? $siteSettings['meta_title'] ?? config('app.name') }}" />
-        <meta property="og:description" content="{{ $meta_description ?? $siteSettings['meta_description'] ?? 'Premium photoshoot studio offering wedding, fashion, portrait and event photography services.' }}" />
+        <meta property="og:site_name" content="{{ $siteSettings['site_name'] ?? 'Middukhera Production' }}" />
+        <meta property="og:title" content="{{ $meta_title ?? $siteSettings['meta_title'] ?? 'Middukhera Production' }}" />
+        <meta property="og:description" content="{{ $meta_description ?? $siteSettings['meta_description'] ?? 'Middukhera Production is a premier photoshoot studio offering wedding, fashion, portrait and event photography services.' }}" />
         <meta property="og:image" content="{{ $meta_image ?? $siteSettings['hero_bg_image'] ?? asset('favicon.ico') }}" />
         <meta property="og:url" content="{{ $meta_canonical ?? url()->current() }}" />
 
         <!-- Twitter Card -->
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="{{ $meta_title ?? $siteSettings['meta_title'] ?? config('app.name') }}" />
-        <meta name="twitter:description" content="{{ $meta_description ?? $siteSettings['meta_description'] ?? 'Premium photoshoot studio offering wedding, fashion, portrait and event photography services.' }}" />
+        <meta name="twitter:title" content="{{ $meta_title ?? $siteSettings['meta_title'] ?? 'Middukhera Production' }}" />
+        <meta name="twitter:description" content="{{ $meta_description ?? $siteSettings['meta_description'] ?? 'Middukhera Production is a premier photoshoot studio offering wedding, fashion, portrait and event photography services.' }}" />
         <meta name="twitter:image" content="{{ $meta_image ?? $siteSettings['hero_bg_image'] ?? asset('favicon.ico') }}" />
 
         <!-- Structured Data (JSON-LD) for LocalBusiness & PhotographyStudio -->
@@ -30,15 +30,16 @@
         {!! json_encode([
           '@context' => 'https://schema.org',
           '@type' => 'PhotographyStudio',
-          'name' => $siteSettings['site_name'] ?? 'Middukhera Studio & Productions',
+          'name' => $siteSettings['site_name'] ?? 'Middukhera Production',
+          'url' => url('/'),
           'image' => $siteSettings['hero_bg_image'] ?? 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e',
           'description' => $siteSettings['meta_description'] ?? 'Luxury Photoshoot & Production Studio',
           'telephone' => $siteSettings['contact_phone'] ?? '+91 98765 43210',
-          'email' => $siteSettings['contact_email'] ?? 'concierge@luminastudio.com',
+          'email' => $siteSettings['contact_email'] ?? 'contact@middukheraproduction.in',
           'priceRange' => ($siteSettings['currency_symbol'] ?? '₹') . '15,000 - ' . ($siteSettings['currency_symbol'] ?? '₹') . '5,00,000',
           'address' => [
             '@type' => 'PostalAddress',
-            'streetAddress' => $siteSettings['contact_address'] ?? 'Mumbai',
+            'streetAddress' => $siteSettings['contact_address'] ?? 'Middukhera Production Studio, India',
           ],
           'openingHours' => 'Mo-Su 09:00-21:00'
         ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) !!}
@@ -116,7 +117,7 @@
         </style>
 
         <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/css/theme.css', 'resources/js/app.js'])
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased dynamic-theme selection:bg-[var(--theme-primary)] selection:text-black">
         <div class="min-h-screen site-bg flex flex-col justify-between">

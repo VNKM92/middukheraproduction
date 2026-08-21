@@ -41,7 +41,7 @@
                             </div>
                             <div>
                                 <h4 class="text-[10px] uppercase tracking-widest text-zinc-400 font-semibold">Concierge Email</h4>
-                                <a href="mailto:{{ $siteSettings['contact_email'] ?? 'concierge@luminastudio.com' }}" class="text-sm font-bold text-white hover:text-[var(--theme-primary)] transition block mt-0.5">{{ $siteSettings['contact_email'] ?? 'concierge@luminastudio.com' }}</a>
+                                <a href="mailto:{{ $siteSettings['contact_email'] ?? 'contact@middukheraproduction.in' }}" class="text-sm font-bold text-white hover:text-[var(--theme-primary)] transition block mt-0.5">{{ $siteSettings['contact_email'] ?? 'contact@middukheraproduction.in' }}</a>
                                 <span class="text-[11px] text-zinc-500 font-light">Guaranteed response within 4 hours</span>
                             </div>
                         </div>
@@ -52,7 +52,7 @@
                             </div>
                             <div>
                                 <h4 class="text-[10px] uppercase tracking-widest text-zinc-400 font-semibold">Studio Atelier</h4>
-                                <p class="text-xs font-semibold text-white mt-0.5 leading-relaxed">{{ $siteSettings['contact_address'] ?? 'Suite 402, Signature Art Tower, Fashion Boulevard, Mumbai, MH 400050' }}</p>
+                                <p class="text-xs font-semibold text-white mt-0.5 leading-relaxed">{{ $siteSettings['contact_address'] ?? 'Middukhera Production Studio, India' }}</p>
                             </div>
                         </div>
                     </div>

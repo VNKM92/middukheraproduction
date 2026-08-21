@@ -22,10 +22,10 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Seed Dynamic Theme & System Settings
         $defaultSettings = [
-            'site_name' => 'Lumina Studio & Productions',
+            'site_name' => 'Middukhera Production',
             'site_tagline' => 'Capturing Eternal Elegance & High-Fashion Artistry',
-            'logo_text' => 'LUMINA',
-            'logo_sub' => 'STUDIO',
+            'logo_text' => 'MIDDUKHERA',
+            'logo_sub' => 'PRODUCTION',
             'primary_color' => '#E5C158',
             'primary_hover' => '#F3D88B',
             'secondary_color' => '#B8922E',
@@ -36,9 +36,9 @@ class DatabaseSeeder extends Seeder
             'text_muted' => '#9CA3AF',
             'border_color' => 'rgba(255, 255, 255, 0.08)',
             'currency_symbol' => '₹',
-            'contact_email' => 'concierge@luminastudio.com',
+            'contact_email' => 'contact@middukheraproduction.in',
             'contact_phone' => '+91 98765 43210',
-            'contact_address' => 'Suite 402, Signature Art Tower, Fashion Boulevard, Mumbai, MH 400050',
+            'contact_address' => 'Middukhera Production Studio, India',
             'operating_hours' => 'Mon - Sun: 09:00 AM - 09:00 PM IST',
             'social_instagram' => 'https://instagram.com',
             'social_facebook' => 'https://facebook.com',
@@ -58,9 +58,9 @@ class DatabaseSeeder extends Seeder
             'stat_awards_label' => 'Global Accolades',
             'stat_rating' => '4.98',
             'stat_rating_label' => 'Client Delight Score',
-            'meta_title' => 'Lumina Studio | Premier Luxury Photoshoot & Production House',
-            'meta_description' => 'Experience India\'s finest photoshoot studio. Luxury wedding cinematography, high-fashion editorials, signature portraits, and commercial campaigns with instant Razorpay booking.',
-            'meta_keywords' => 'photoshoot studio, luxury photography, wedding photoshoot, fashion editorial, portrait studio, Mumbai photography, Razorpay studio booking',
+            'meta_title' => 'Middukhera Production | Premier Luxury Photoshoot & Production House',
+            'meta_description' => 'Experience Middukhera Production. Luxury wedding cinematography, high-fashion editorials, signature portraits, and commercial campaigns with instant Razorpay booking.',
+            'meta_keywords' => 'Middukhera Production, photoshoot studio, luxury photography, wedding photoshoot, fashion editorial, portrait studio, Razorpay studio booking',
             'razorpay_key_id' => 'rzp_test_sample',
             'razorpay_simulation_mode' => '1',
         ];
@@ -166,7 +166,7 @@ class DatabaseSeeder extends Seeder
         // 4. Create vendor user and vendor record
         if (!User::where('email', 'vendor@studio.test')->exists()) {
             $vendorUser = User::factory()->create([
-                'name' => 'Lumina Master Artist',
+                'name' => 'Middukhera Master Artist',
                 'email' => 'vendor@studio.test',
                 'role' => 'vendor',
                 'password' => 'password',
@@ -176,11 +176,11 @@ class DatabaseSeeder extends Seeder
         }
 
         $vendor = \App\Models\Vendor::firstOrCreate([
-            'slug' => Str::slug('lumina-master-artist'),
+            'slug' => Str::slug('middukhera-master-artist'),
         ], [
             'user_id' => $vendorUser->id,
-            'name' => 'Lumina Master Artist',
-            'description' => 'Lumina Studio’s elite photographer with over a decade of high-fashion and wedding editorial experience.',
+            'name' => 'Middukhera Master Artist',
+            'description' => 'Middukhera Production’s elite photographer with over a decade of high-fashion and wedding editorial experience.',
             'status' => 'approved',
         ]);
 
@@ -221,9 +221,9 @@ class DatabaseSeeder extends Seeder
                 'excerpt' => $bInfo['excerpt'],
                 'content' => $bInfo['content'],
                 'image_path' => $bInfo['image_path'],
-                'meta_title' => $bInfo['title'] . ' | Lumina Stories',
+                'meta_title' => $bInfo['title'] . ' | Middukhera Stories',
                 'meta_description' => $bInfo['excerpt'],
-                'meta_keywords' => 'photoshoot, masterclass, luxury photography, how-to',
+                'meta_keywords' => 'Middukhera Production, photoshoot, masterclass, luxury photography, how-to',
             ]);
         }
 
@@ -246,6 +246,6 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        $this->command->info('Seeded dynamic settings, luxury packages, users, blogs and gallery showcase successfully.');
+        $this->command->info('Seeded Middukhera Production dynamic settings, luxury packages, users, blogs and gallery showcase successfully.');
     }
 }

@@ -20,7 +20,16 @@ Route::get('/blog', [FrontendController::class, 'blog'])->name('blog');
 Route::get('/blog/{slug}', [FrontendController::class, 'blogSingle'])->name('blog.single');
 Route::get('/contact', [FrontendController::class, 'contact'])->name('contact');
 Route::post('/contact', [FrontendController::class, 'contactSubmit'])->name('contact.submit');
+
+// Legal & Compliance Policies (Mandatory for Razorpay Approval)
 Route::get('/terms', [FrontendController::class, 'terms'])->name('terms');
+Route::get('/terms-and-conditions', [FrontendController::class, 'terms'])->name('terms.alias');
+Route::get('/privacy', [FrontendController::class, 'privacy'])->name('privacy');
+Route::get('/privacy-policy', [FrontendController::class, 'privacy'])->name('privacy.alias');
+Route::get('/refund-policy', [FrontendController::class, 'refundPolicy'])->name('refund-policy');
+Route::get('/cancellation-and-refund-policy', [FrontendController::class, 'refundPolicy'])->name('refund-policy.alias');
+Route::get('/shipping-policy', [FrontendController::class, 'shippingPolicy'])->name('shipping-policy');
+Route::get('/shipping-and-delivery', [FrontendController::class, 'shippingPolicy'])->name('shipping-policy.alias');
 Route::get('/disclaimer', [FrontendController::class, 'disclaimer'])->name('disclaimer');
 
 // Booking & Checkout Flow
@@ -94,7 +103,7 @@ Route::post('/webhooks/razorpay', [RazorpayWebhookController::class, 'handle'])-
 // SEO XML Sitemap & Robots
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap.xml');
 Route::get('/robots.txt', function() {
-    $appUrl = config('app.url') ?: env('APP_URL', 'http://localhost/vk/studio/');
+    $appUrl = config('app.url') ?: env('APP_URL', 'https://middukheraproduction.in');
     $content = "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /client/\nDisallow: /vendor/\n\nSitemap: {$appUrl}/sitemap.xml\n";
     return response($content, 200)->header('Content-Type', 'text/plain');
 });

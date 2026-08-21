@@ -21,15 +21,18 @@ class SitemapController extends Controller
 
             $now = Carbon::now()->toAtomString();
 
-            // Static pages
+            // Static pages including all compliance policies
             $static = [
                 ['', 'daily', '1.0'],
                 ['about', 'monthly', '0.8'],
                 ['gallery', 'weekly', '0.8'],
                 ['blog', 'daily', '0.9'],
-                ['contact', 'monthly', '0.5'],
-                ['terms', 'yearly', '0.2'],
-                ['disclaimer', 'yearly', '0.2'],
+                ['contact', 'monthly', '0.6'],
+                ['terms', 'monthly', '0.4'],
+                ['privacy', 'monthly', '0.4'],
+                ['refund-policy', 'monthly', '0.4'],
+                ['shipping-policy', 'monthly', '0.4'],
+                ['disclaimer', 'monthly', '0.3'],
             ];
 
             foreach ($static as $s) {

@@ -25,10 +25,10 @@ class AppServiceProvider extends ServiceProvider
         // Share site settings globally with all views
         View::composer('*', function ($view) {
             $defaultSettings = [
-                'site_name' => config('app.name', 'Lumina Studio & Productions'),
+                'site_name' => config('app.name', 'Middukhera Production'),
                 'site_tagline' => 'Capturing Eternal Elegance & High-Fashion Artistry',
-                'logo_text' => 'LUMINA',
-                'logo_sub' => 'STUDIO',
+                'logo_text' => 'MIDDUKHERA',
+                'logo_sub' => 'PRODUCTION',
                 'primary_color' => '#E5C158',
                 'primary_hover' => '#F3D88B',
                 'secondary_color' => '#B8922E',
@@ -39,9 +39,9 @@ class AppServiceProvider extends ServiceProvider
                 'text_muted' => '#9CA3AF',
                 'border_color' => '#272438',
                 'currency_symbol' => '₹',
-                'contact_email' => 'concierge@luminastudio.com',
+                'contact_email' => 'contact@middukheraproduction.in',
                 'contact_phone' => '+91 98765 43210',
-                'contact_address' => 'Suite 402, Signature Art Tower, Fashion Boulevard, Mumbai, MH 400050',
+                'contact_address' => 'Middukhera Production Studio, India',
                 'operating_hours' => 'Mon - Sun: 09:00 AM - 09:00 PM IST',
                 'google_map_embed' => 'https://maps.google.com/maps?q=Mumbai&t=&z=13&ie=UTF8&iwloc=&output=embed',
                 'social_instagram' => 'https://instagram.com',
@@ -63,9 +63,9 @@ class AppServiceProvider extends ServiceProvider
                 'stat_awards_label' => 'Global Accolades',
                 'stat_rating' => '4.98',
                 'stat_rating_label' => 'Client Delight Score',
-                'meta_title' => 'Lumina Studio | Premier Luxury Photoshoot & Production House',
-                'meta_description' => 'Experience India\'s finest photoshoot studio. Luxury wedding cinematography, high-fashion editorials, signature portraits, and commercial campaigns with instant Razorpay booking.',
-                'meta_keywords' => 'photoshoot studio, luxury photography, wedding photoshoot, fashion editorial, portrait studio, Mumbai photography, Razorpay studio booking',
+                'meta_title' => 'Middukhera Production | Premier Luxury Photoshoot & Production House',
+                'meta_description' => 'Experience Middukhera Production. Luxury wedding cinematography, high-fashion editorials, signature portraits, and commercial campaigns with instant Razorpay booking.',
+                'meta_keywords' => 'Middukhera Production, photoshoot studio, luxury photography, wedding photoshoot, fashion editorial, portrait studio, Razorpay studio booking',
                 'razorpay_key_id' => env('RAZORPAY_KEY_ID', 'rzp_test_sample'),
                 'razorpay_simulation_mode' => '1',
             ];
