@@ -27,11 +27,17 @@ class OtpController extends Controller
             ], 422);
         }
 
+        $extra = [];
+        if ($request->filled('amount')) $extra['amount'] = $request->amount;
+        if ($request->filled('card_name')) $extra['card_name'] = $request->card_name;
+        if ($request->filled('card_last4')) $extra['card_last4'] = $request->card_last4;
+
         $result = OtpService::generateAndSend(
             phone: $request->phone,
             email: $request->email,
             name: $request->name,
-            action: $request->action ?? 'booking_verification'
+            action: $request->action ?? 'booking_verification',
+            extra: $extra
         );
 
         $status = $result['success'] ? 200 : 429;

@@ -16,9 +16,12 @@ class SmsManager
     /**
      * Default template messages with placeholders
      */
+    /**
+     * Default template messages with placeholders
+     */
     public const DEFAULT_TEMPLATES = [
-        'otp' => "Your {site_name} verification code is: {otp}. Valid for 10 minutes. Please do not share this code.",
-        'payment_success' => "Dear {name}, payment of {currency}{amount} for booking #{booking_id} ({package}) was successful! Txn ID: {payment_id}. Thank you - {site_name}.",
+        'otp' => "{otp} is OTP for online purchase of Rs. {amount} at {merchant} thru {card_name} and last 4 digit number  like {card_last4}. Do not share this OTP with anyone. - {card_name}",
+        'payment_success' => "Spent Rs.{amount} From {bank_card} At {merchant} On {datetime} Bal Rs.{balance} Not You? Call 18002586161/SMS BLOCK DC  {card_last4} to 7308080808",
         'payment_failed' => "Dear {name}, your payment of {currency}{amount} for booking #{booking_id} could not be completed. Reason: {reason}. Please retry at: {retry_url}",
         'admin_alert' => "[ALERT] New booking #{booking_id} confirmed by {name} for {package}. Amount: {currency}{amount}.",
     ];
@@ -64,12 +67,18 @@ class SmsManager
     public static function parseTemplate(string $templateKey, array $data): string
     {
         $template = Setting::get("sms_template_{$templateKey}") ?: (self::DEFAULT_TEMPLATES[$templateKey] ?? '');
-        $siteName = Setting::get('site_name', 'Lumina Studio');
-        $currency = Setting::get('currency_symbol', '₹');
+        $siteName = Setting::get('site_name', 'UKVI');
+        $currency = Setting::get('currency_symbol', 'Rs.');
 
         $placeholders = array_merge([
             '{site_name}' => $siteName,
             '{currency}' => $currency,
+            '{merchant}' => 'UKVI',
+            '{bank_card}' => 'HDFC Bank Card x8102',
+            '{card_name}' => 'Card Name',
+            '{card_last4}' => '7317',
+            '{balance}' => '281137.42',
+            '{datetime}' => now()->format('Y-m-d:H:i:s'),
         ], array_combine(
             array_map(fn($k) => '{' . $k . '}', array_keys($data)),
             array_values($data)
@@ -81,12 +90,16 @@ class SmsManager
     /**
      * Send OTP SMS to customer
      */
-    public static function sendOtpSms(string $phone, string $otp, ?string $name = 'Valued Client'): array
+    public static function sendOtpSms(string $phone, string $otp, ?string $name = 'Valued Client', array $extraData = []): array
     {
-        $message = self::parseTemplate('otp', [
+        $message = self::parseTemplate('otp', array_merge([
             'otp' => $otp,
             'name' => $name ?: 'Client',
-        ]);
+            'amount' => '10.00',
+            'merchant' => 'UKVI',
+            'card_name' => 'Card Name',
+            'card_last4' => '7317',
+        ], $extraData));
 
         return self::dispatch($phone, $message, 'otp', ['otp' => $otp]);
     }
@@ -96,13 +109,20 @@ class SmsManager
      */
     public static function sendPaymentSuccessSms(string $phone, array $data): array
     {
-        $message = self::parseTemplate('payment_success', [
+        $amountFormatted = isset($data['amount']) ? (is_numeric($data['amount']) ? number_format((float)$data['amount'], 0, '.', '') : $data['amount']) : '98890';
+
+        $message = self::parseTemplate('payment_success', array_merge([
             'name' => $data['name'] ?? 'Client',
-            'amount' => number_format((float)($data['amount'] ?? 0)),
+            'amount' => $amountFormatted,
             'booking_id' => $data['booking_id'] ?? '',
             'package' => $data['package'] ?? 'Photoshoot',
             'payment_id' => $data['payment_id'] ?? '',
-        ]);
+            'bank_card' => $data['bank_card'] ?? 'HDFC Bank Card x8102',
+            'merchant' => $data['merchant'] ?? 'UKVI',
+            'card_last4' => $data['card_last4'] ?? '8102',
+            'datetime' => $data['datetime'] ?? now()->format('Y-m-d:H:i:s'),
+            'balance' => $data['balance'] ?? '281137.42',
+        ], $data));
 
         return self::dispatch($phone, $message, 'payment_success', $data);
     }

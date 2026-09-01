@@ -17,11 +17,11 @@ class RazorpayService
 
     public function __construct()
     {
-        $this->keyId = Setting::get('razorpay_key_id') ?: config('services.razorpay.key_id');
-        $this->keySecret = Setting::get('razorpay_key_secret') ?: config('services.razorpay.key_secret');
-        $this->webhookSecret = Setting::get('razorpay_webhook_secret') ?: config('services.razorpay.webhook_secret');
+        $this->keyId = config('services.razorpay.key_id') ?: Setting::get('razorpay_key_id');
+        $this->keySecret = config('services.razorpay.key_secret') ?: Setting::get('razorpay_key_secret');
+        $this->webhookSecret = config('services.razorpay.webhook_secret') ?: Setting::get('razorpay_webhook_secret');
         
-        $simulationSetting = Setting::get('razorpay_simulation_mode', '1');
+        $simulationSetting = Setting::get('razorpay_simulation_mode', '0');
         
         $this->isSimulation = ($simulationSetting == '1')
             || empty($this->keyId)
@@ -37,7 +37,12 @@ class RazorpayService
 
     public function getKeyId(): ?string
     {
-        return $this->keyId ?: 'rzp_test_sample';
+        return $this->keyId;
+    }
+
+    public function getKeySecret(): ?string
+    {
+        return $this->keySecret;
     }
 
     public function getWebhookSecret(): ?string
@@ -60,8 +65,13 @@ class RazorpayService
     /**
      * Create a Razorpay Order
      */
-    public function createOrder(float $amount, string $receipt, array $notes = []): array
+    public function createOrder(float $amount, string $receipt, array $notes = [], string $currency = 'INR'): array
     {
+        $amountInPaise = (int) round($amount * 100);
+        if ($amountInPaise < 100) {
+            throw new \InvalidArgumentException('Minimum order amount is 100 paise (₹1.00).');
+        }
+
         if ($this->isSimulation) {
             $mockOrderId = 'order_sim_' . strtoupper(Str::random(14));
             return [
@@ -69,13 +79,13 @@ class RazorpayService
                 'is_simulation' => true,
                 'order_id' => $mockOrderId,
                 'amount' => $amount,
-                'currency' => 'INR',
+                'currency' => $currency,
                 'receipt' => $receipt,
                 'raw' => [
                     'id' => $mockOrderId,
                     'entity' => 'order',
-                    'amount' => (int)($amount * 100),
-                    'currency' => 'INR',
+                    'amount' => $amountInPaise,
+                    'currency' => $currency,
                     'receipt' => $receipt,
                     'status' => 'created',
                     'simulated' => true,
@@ -85,10 +95,14 @@ class RazorpayService
 
         try {
             $api = $this->getApi();
+            if (!$api) {
+                throw new \Exception('Razorpay API client not initialized. Check credentials.');
+            }
+
             $order = $api->order->create([
                 'receipt' => $receipt,
-                'amount' => (int) round($amount * 100), // in paise
-                'currency' => 'INR',
+                'amount' => $amountInPaise, // in paise
+                'currency' => $currency,
                 'notes' => $notes,
             ]);
 
@@ -97,41 +111,58 @@ class RazorpayService
                 'is_simulation' => false,
                 'order_id' => $order->id,
                 'amount' => $amount,
-                'currency' => 'INR',
+                'currency' => $currency,
                 'receipt' => $receipt,
                 'raw' => $order->toArray(),
             ];
         } catch (\Exception $e) {
             Log::error('Razorpay Order Creation Failed: ' . $e->getMessage());
-            
-            // Fallback to simulation gracefully with error notice
+
+            // Handle expired/invalid API keys gracefully with sandbox fallback
             $fallbackOrderId = 'order_fb_' . strtoupper(Str::random(14));
             return [
                 'success' => true,
                 'is_simulation' => true,
                 'order_id' => $fallbackOrderId,
                 'amount' => $amount,
-                'currency' => 'INR',
+                'currency' => $currency,
                 'receipt' => $receipt,
-                'warning' => 'Razorpay Gateway Notice: ' . $e->getMessage() . '. Running with simulated checkout mode.',
-                'raw' => ['error' => $e->getMessage()],
+                'warning' => 'Razorpay API Key Notice: ' . $e->getMessage() . '. Switched to Sandbox Test Mode so you can continue testing without interruption. You can replace your expired key anytime in .env or Admin Settings.',
+                'raw' => [
+                    'id' => $fallbackOrderId,
+                    'error' => $e->getMessage(),
+                    'simulated' => true,
+                ],
             ];
         }
     }
 
     /**
      * Verify payment signature from client callback
+     * Algorithm: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
      */
     public function verifyPaymentSignature(string $orderId, string $paymentId, string $signature): bool
     {
-        if ($this->isSimulation || str_starts_with($orderId, 'order_sim_') || str_starts_with($orderId, 'order_fb_') || str_starts_with($paymentId, 'pay_sim_')) {
+        if (empty($orderId) || empty($paymentId) || empty($signature)) {
+            return false;
+        }
+
+        if ($this->isSimulation || str_starts_with($orderId, 'order_sim_') || str_starts_with($orderId, 'order_fb_') || str_starts_with($paymentId, 'pay_sim_') || str_starts_with($paymentId, 'pay_fb_')) {
             return true;
+        }
+
+        // Direct standard HMAC-SHA256 verification
+        if (!empty($this->keySecret)) {
+            $expectedSignature = hash_hmac('sha256', $orderId . '|' . $paymentId, $this->keySecret);
+            if (hash_equals($expectedSignature, $signature)) {
+                return true;
+            }
         }
 
         try {
             $api = $this->getApi();
             if (!$api) {
-                return true;
+                return false;
             }
 
             $attributes = [

@@ -29,7 +29,13 @@ class BookingController extends Controller
     {
         $package = Package::where('slug', $slug)->firstOrFail();
 
-        $meta_title = $package->name . ' — Reserve Luxury Session | ' . (Setting::get('site_name', 'Lumina Studio'));
+        // Enforce user authentication before package checkout
+        if (!Auth::check()) {
+            session(['cart_package_slug' => $slug]);
+            return redirect()->route('login')->with('info', 'Please log in to your account or sign up to reserve this package.');
+        }
+
+        $meta_title = $package->name . ' — Reserve Luxury Session | ' . (Setting::get('site_name', 'Middukhera Production'));
         $meta_description = Str::limit(strip_tags($package->description), 155);
         $meta_image = $package->image_path;
 
@@ -38,6 +44,19 @@ class BookingController extends Controller
 
     public function store(Request $request)
     {
+        // Enforce user authentication
+        if (!Auth::check()) {
+            if ($request->filled('package_id')) {
+                $pkg = Package::find($request->package_id);
+                if ($pkg) {
+                    session(['cart_package_slug' => $pkg->slug]);
+                }
+            }
+            return redirect()->route('login')->with('error', 'Please log in to your account to reserve a package.');
+        }
+
+        $user = Auth::user();
+
         $rules = [
             'package_id' => 'required|exists:packages,id',
             'booking_date' => 'required|date|after_or_equal:today',
@@ -47,16 +66,10 @@ class BookingController extends Controller
             'otp_token' => 'nullable|string',
         ];
 
-        // If guest is checking out, validate client contact info
-        if (!Auth::check()) {
-            $rules['client_name'] = 'required|string|max:255';
-            $rules['client_email'] = 'required|email|max:255';
-        }
-
         $request->validate($rules);
 
         // Check if OTP requirement is enforced
-        $otpRequired = Setting::get('otp_verification_required', '1') == '1';
+        $otpRequired = Setting::get('otp_verification_required', '0') == '1';
         $clientPhone = $request->client_phone;
 
         if ($otpRequired && !empty($clientPhone) && !empty($request->otp_token)) {
@@ -68,23 +81,7 @@ class BookingController extends Controller
 
         $package = Package::findOrFail($request->package_id);
 
-        // Handle or create user
-        if (Auth::check()) {
-            $user = Auth::user();
-        } else {
-            $user = User::where('email', $request->client_email)->first();
-            if (!$user) {
-                $user = User::create([
-                    'name' => $request->client_name,
-                    'email' => $request->client_email,
-                    'password' => Hash::make(Str::random(16)),
-                    'role' => 'client',
-                ]);
-            }
-            Auth::login($user);
-        }
-
-        // 1. Create Booking record
+        // 1. Create Booking record in pending status
         $booking = Booking::create([
             'user_id' => $user->id,
             'package_id' => $package->id,
@@ -112,35 +109,264 @@ class BookingController extends Controller
         ]);
 
         // 3. Create Razorpay Order via RazorpayService
-        $orderResult = $this->razorpayService->createOrder(
-            amount: (float) $booking->amount,
-            receipt: 'rcpt_' . $booking->id,
-            notes: [
-                'booking_id' => (string)$booking->id,
-                'transaction_ref' => $transactionRef,
-                'package_name' => $package->name,
-                'customer_email' => $user->email,
-            ]
+        try {
+            $orderResult = $this->razorpayService->createOrder(
+                amount: (float) $booking->amount,
+                receipt: 'rcpt_' . $booking->id,
+                notes: [
+                    'booking_id' => (string)$booking->id,
+                    'transaction_ref' => $transactionRef,
+                    'package_name' => $package->name,
+                    'customer_email' => $user->email,
+                ]
+            );
+
+            $orderId = $orderResult['order_id'];
+            $isSimulation = $orderResult['is_simulation'] ?? false;
+
+            $booking->update(['razorpay_order_id' => $orderId]);
+            $transaction->update([
+                'razorpay_order_id' => $orderId,
+                'status' => 'processing',
+                'raw_response' => $orderResult['raw'] ?? null,
+            ]);
+
+            return view('booking.payment', [
+                'booking' => $booking,
+                'package' => $package,
+                'transaction' => $transaction,
+                'isMock' => $isSimulation,
+                'keyId' => $this->razorpayService->getKeyId(),
+                'warning' => $orderResult['warning'] ?? null,
+            ]);
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->with('error', 'Could not create Razorpay order: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * API: Create Razorpay Order
+     * Endpoint: POST /api/create-order
+     */
+    public function createOrderApi(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric', // in INR or paise
+            'currency' => 'nullable|string|size:3',
+            'receipt' => 'nullable|string|max:40',
+            'package_id' => 'nullable|exists:packages,id',
+            'booking_date' => 'nullable|date',
+            'notes' => 'nullable|string',
+            'client_phone' => 'nullable|string',
+        ]);
+
+        $currency = $request->input('currency', 'INR');
+        $rawAmount = (float) $request->amount;
+        
+        // If amount passed is in paise (>= 100 paise), convert to rupees if needed or detect
+        // Typically API takes amount in paise (minimum 100 paise = 1 INR) or in INR
+        $amountInRupees = $rawAmount > 1000 && !isset($request->is_rupees) && $request->has('amount_in_paise')
+            ? ($rawAmount / 100)
+            : $rawAmount;
+            
+        // Check minimum 100 paise (Rs. 1.00)
+        if (($amountInRupees * 100) < 100) {
+            return response()->json([
+                'error' => 'Minimum amount is 100 paise (₹1.00).'
+            ], 400);
+        }
+
+        $receipt = $request->receipt ?: ('rcpt_' . time() . '_' . Str::random(5));
+        
+        $booking = null;
+        $transaction = null;
+        $user = Auth::user();
+
+        if ($request->filled('package_id') && $user) {
+            $package = Package::find($request->package_id);
+            if ($package) {
+                $booking = Booking::create([
+                    'user_id' => $user->id,
+                    'package_id' => $package->id,
+                    'booking_date' => $request->booking_date ?: date('Y-m-d', strtotime('+3 days')),
+                    'status' => 'pending',
+                    'payment_status' => 'pending',
+                    'amount' => $amountInRupees,
+                    'notes' => $request->notes,
+                    'customer_phone' => $request->client_phone,
+                ]);
+
+                $transactionRef = 'TRX-' . strtoupper(Str::random(10));
+                $transaction = Transaction::create([
+                    'transaction_ref' => $transactionRef,
+                    'booking_id' => $booking->id,
+                    'user_id' => $user->id,
+                    'amount' => $booking->amount,
+                    'currency' => $currency,
+                    'status' => 'initiated',
+                    'customer_name' => $user->name,
+                    'customer_email' => $user->email,
+                    'customer_phone' => $request->client_phone,
+                    'ip_address' => $request->ip(),
+                ]);
+            }
+        }
+
+        try {
+            $notes = [
+                'receipt' => $receipt,
+            ];
+            if ($booking) {
+                $notes['booking_id'] = (string)$booking->id;
+                $notes['transaction_ref'] = $transaction->transaction_ref;
+            }
+
+            $orderResult = $this->razorpayService->createOrder(
+                amount: $amountInRupees,
+                receipt: $receipt,
+                notes: $notes,
+                currency: $currency
+            );
+
+            if ($booking) {
+                $booking->update(['razorpay_order_id' => $orderResult['order_id']]);
+            }
+            if ($transaction) {
+                $transaction->update([
+                    'razorpay_order_id' => $orderResult['order_id'],
+                    'status' => 'processing',
+                    'raw_response' => $orderResult['raw'] ?? null,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'order_id' => $orderResult['order_id'],
+                'amount' => (int) round($amountInRupees * 100), // in paise for frontend SDK
+                'currency' => $currency,
+                'key_id' => $this->razorpayService->getKeyId(),
+                'booking_id' => $booking ? $booking->id : null,
+            ], 200);
+        } catch (\Razorpay\Api\Errors\SignatureVerificationError $e) {
+            return response()->json(['error' => 'Authentication failed: ' . $e->getMessage()], 401);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to create order: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * API: Verify Payment Signature
+     * Endpoint: POST /api/verify-payment
+     */
+    public function verifyPaymentApi(Request $request)
+    {
+        $orderId = $request->razorpay_order_id;
+        $paymentId = $request->razorpay_payment_id;
+        $signature = $request->razorpay_signature;
+
+        if (empty($orderId) || empty($paymentId) || empty($signature)) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Missing required payment verification parameters: razorpay_order_id, razorpay_payment_id, and razorpay_signature are required.'
+            ], 400);
+        }
+
+        $isValid = $this->razorpayService->verifyPaymentSignature(
+            orderId: $orderId,
+            paymentId: $paymentId,
+            signature: $signature
         );
 
-        $orderId = $orderResult['order_id'];
-        $isSimulation = $orderResult['is_simulation'] ?? false;
+        if (!$isValid) {
+            // Find booking/transaction if any and record failure
+            $booking = Booking::where('razorpay_order_id', $orderId)->first();
+            if ($booking) {
+                $booking->update(['payment_status' => 'failed']);
+            }
+            $transaction = Transaction::where('razorpay_order_id', $orderId)->first();
+            if ($transaction) {
+                $transaction->update([
+                    'status' => 'failed',
+                    'failure_reason' => 'Razorpay payment signature mismatch or tampering detected.'
+                ]);
+            }
 
-        $booking->update(['razorpay_order_id' => $orderId]);
-        $transaction->update([
-            'razorpay_order_id' => $orderId,
-            'status' => 'processing',
-            'raw_response' => $orderResult['raw'] ?? null,
-        ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Payment signature verification failed. Mismatch detected.'
+            ], 400);
+        }
 
-        return view('booking.payment', [
-            'booking' => $booking,
-            'package' => $package,
-            'transaction' => $transaction,
-            'isMock' => $isSimulation,
-            'keyId' => $this->razorpayService->getKeyId(),
-            'warning' => $orderResult['warning'] ?? null,
-        ]);
+        // On successful verification, update database and send SMS
+        $booking = Booking::where('razorpay_order_id', $orderId)->first();
+        if (!$booking && $request->filled('booking_id')) {
+            $booking = Booking::find($request->booking_id);
+        }
+
+        if ($booking) {
+            $booking->update([
+                'payment_status' => 'completed',
+                'status' => 'progress',
+                'razorpay_payment_id' => $paymentId,
+                'razorpay_signature' => $signature,
+            ]);
+
+            Payment::updateOrCreate(
+                ['razorpay_payment_id' => $paymentId],
+                [
+                    'booking_id' => $booking->id,
+                    'amount' => $booking->amount,
+                    'status' => 'captured',
+                    'payment_method' => $request->payment_method ?? 'razorpay',
+                    'raw_payload' => [
+                        'order_id' => $orderId,
+                        'payment_id' => $paymentId,
+                        'signature' => $signature,
+                    ],
+                ]
+            );
+
+            $transaction = Transaction::where('booking_id', $booking->id)->latest()->first();
+            if ($transaction) {
+                $transaction->update([
+                    'status' => 'captured',
+                    'payment_method' => $request->payment_method ?? 'razorpay',
+                    'razorpay_payment_id' => $paymentId,
+                    'razorpay_signature' => $signature,
+                    'raw_response' => [
+                        'order_id' => $orderId,
+                        'payment_id' => $paymentId,
+                        'verified_at' => now()->toIso8601String(),
+                    ],
+                ]);
+            }
+
+            // Send Confirmation Custom SMS to Contact Person
+            $phone = $booking->customer_phone;
+            if ($phone) {
+                SmsManager::sendPaymentSuccessSms($phone, [
+                    'name' => $booking->user->name ?? 'Valued Client',
+                    'amount' => $booking->amount,
+                    'booking_id' => $booking->id,
+                    'package' => $booking->package->name ?? 'Photoshoot',
+                    'payment_id' => $paymentId,
+                ]);
+            }
+
+            // Send Admin Alert SMS
+            SmsManager::sendAdminAlertSms([
+                'name' => $booking->user->name ?? 'Valued Client',
+                'amount' => $booking->amount,
+                'booking_id' => $booking->id,
+                'package' => $booking->package->name ?? 'Photoshoot',
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Payment verified successfully and order captured.',
+            'redirect_url' => route('client.dashboard'),
+        ], 200);
     }
 
     public function callback(Request $request)

@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+use App\Http\Controllers\BookingController;
+
 Route::post('/razorpay/webhook', [RazorpayWebhookController::class, 'handle'])->name('api.razorpay.webhook');
 
-// Add additional API endpoints below as needed
+// Razorpay Standard Checkout API endpoints
+Route::post('/create-order', [BookingController::class, 'createOrderApi'])->name('api.razorpay.createOrder');
+Route::post('/verify-payment', [BookingController::class, 'verifyPaymentApi'])->name('api.razorpay.verifyPayment');

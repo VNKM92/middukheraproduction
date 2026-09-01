@@ -24,7 +24,8 @@ class AdminDashboardController extends Controller
     public function index()
     {
         $totalEarnings = Transaction::where('status', 'captured')->sum('amount') ?: Payment::where('status', 'captured')->sum('amount');
-        $totalBookings = Booking::count();
+        $totalBookings = Booking::where('payment_status', 'completed')->count();
+        $totalPendingBookings = Booking::where('payment_status', '!=', 'completed')->count();
         $totalVisitors = Visitor::count();
         $totalPackages = Package::count();
         $totalVendors = Vendor::count();

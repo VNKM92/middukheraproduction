@@ -26,6 +26,31 @@
         </div>
     </div>
 
+    <!-- Pending Checkout / Cart Item Alert -->
+    @if(isset($pendingBookings) && $pendingBookings->isNotEmpty())
+        <div class="space-y-4">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+                <span>Pending Reservations Awaiting Payment ({{ count($pendingBookings) }})</span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @foreach($pendingBookings as $pb)
+                    <div class="site-card rounded-2xl border border-amber-500/30 p-5 bg-amber-500/5 flex items-center justify-between gap-4">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-500/20 text-amber-300">Awaiting Razorpay Payment</span>
+                            <h4 class="text-sm font-bold text-white">{{ $pb->package->name ?? 'Photoshoot Package' }}</h4>
+                            <p class="text-xs text-zinc-400">Amount: <strong class="text-emerald-400">{{ $siteSettings['currency_symbol'] ?? '₹' }}{{ number_format($pb->amount) }}</strong> &bull; Date: {{ \Carbon\Carbon::parse($pb->booking_date)->format('M d, Y') }}</p>
+                        </div>
+                        <a href="{{ route('booking.checkout', $pb->package->slug ?? 'package') }}" class="px-4 py-2 rounded-xl text-xs font-bold btn-gold-dynamic shrink-0 flex items-center gap-1.5 shadow-lg shadow-[var(--theme-primary)]/20">
+                            <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+                            <span>Complete Payment</span>
+                        </a>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <!-- Active Sessions List -->
     <div class="space-y-6">
         <div class="flex items-center justify-between">

@@ -28,6 +28,11 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        if (session()->has('cart_package_slug')) {
+            $cartSlug = session()->pull('cart_package_slug');
+            return redirect()->route('booking.checkout', $cartSlug)->with('success', 'Logged in successfully! You can now complete your package reservation.');
+        }
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 

@@ -44,6 +44,19 @@
                         </span>
                     </div>
 
+                    @auth
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-zinc-300">Client Name</label>
+                                <input type="text" readonly value="{{ Auth::user()->name }}" class="w-full px-4 py-2.5 rounded-xl bg-black/60 border border-white/10 text-white text-xs opacity-90 cursor-not-allowed">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-zinc-300">Account Email</label>
+                                <input type="email" readonly value="{{ Auth::user()->email }}" class="w-full px-4 py-2.5 rounded-xl bg-black/60 border border-white/10 text-white text-xs opacity-90 cursor-not-allowed">
+                            </div>
+                        </div>
+                    @endauth
+
                     @guest
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div class="space-y-1">

@@ -52,6 +52,12 @@
             </div>
         </div>
 
+        <!-- Dynamic Alert / Error Container -->
+        <div id="payment-error-box" class="hidden p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs text-left flex items-start gap-2.5">
+            <i data-lucide="alert-octagon" class="w-4 h-4 shrink-0 mt-0.5 text-rose-400"></i>
+            <span id="payment-error-message"></span>
+        </div>
+
         <!-- Payment Actions -->
         @if($isMock)
             <div class="space-y-4 pt-2">
@@ -78,11 +84,21 @@
 
                 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
                 <script>
+                    function showPaymentError(msg) {
+                        const box = document.getElementById('payment-error-box');
+                        const text = document.getElementById('payment-error-message');
+                        if (box && text) {
+                            text.textContent = msg;
+                            box.classList.remove('hidden');
+                            if (window.lucide) window.lucide.createIcons();
+                        }
+                    }
+
                     const rzpOptions = {
                         key: "{{ $keyId }}",
                         amount: "{{ (int) round($booking->amount * 100) }}",
                         currency: "INR",
-                        name: "{{ $siteSettings['site_name'] ?? 'Middukhera Production' }}",
+                        name: "{{ $siteSettings['site_name'] ?? 'UKVI' }}",
                         description: "Photoshoot Booking #{{ $booking->id }} - {{ $booking->package->name ?? 'Package' }}",
                         image: "{{ $siteSettings['hero_bg_image'] ?? '' }}",
                         order_id: "{{ $booking->razorpay_order_id }}",
@@ -94,7 +110,13 @@
                         theme: {
                             color: "{{ $siteSettings['primary_color'] ?? '#E5C158' }}"
                         },
+                        modal: {
+                            ondismiss: function() {
+                                showPaymentError('Payment window was closed before completion. You can click Pay to try again.');
+                            }
+                        },
                         handler: function (response) {
+                            // Submit verification to backend
                             const form = document.createElement('form');
                             form.method = 'POST';
                             form.action = '{{ route('booking.callback') }}';
@@ -111,8 +133,15 @@
                     };
 
                     const rzp = new Razorpay(rzpOptions);
+
+                    rzp.on('payment.failed', function (response) {
+                        showPaymentError('Payment failed: ' + (response.error.description || response.error.reason || 'Transaction could not be completed.'));
+                    });
+
                     document.getElementById('rzp-button').onclick = function(e) {
                         e.preventDefault();
+                        const errorBox = document.getElementById('payment-error-box');
+                        if (errorBox) errorBox.classList.add('hidden');
                         rzp.open();
                     };
                 </script>

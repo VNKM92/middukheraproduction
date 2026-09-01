@@ -35,6 +35,8 @@ Route::get('/disclaimer', [FrontendController::class, 'disclaimer'])->name('disc
 // Booking & Checkout Flow
 Route::get('/package/{slug}/checkout', [BookingController::class, 'checkout'])->name('booking.checkout');
 Route::post('/booking/store', [BookingController::class, 'store'])->name('booking.store');
+Route::post('/booking/create-order', [BookingController::class, 'createOrderApi'])->name('booking.createOrder');
+Route::post('/booking/verify-payment', [BookingController::class, 'verifyPaymentApi'])->name('booking.verifyPayment');
 Route::post('/booking/callback', [BookingController::class, 'callback'])->name('booking.callback');
 
 // Phone / SMS OTP Verification Endpoints

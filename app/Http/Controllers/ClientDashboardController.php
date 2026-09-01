@@ -11,8 +11,17 @@ class ClientDashboardController extends Controller
 {
     public function index()
     {
+        // Only completed / paid bookings appear as confirmed studio sessions
         $bookings = Booking::with(['package', 'latestTransaction'])
             ->where('user_id', Auth::id())
+            ->where('payment_status', 'completed')
+            ->latest()
+            ->get();
+
+        // Pending / unpaid bookings
+        $pendingBookings = Booking::with(['package', 'latestTransaction'])
+            ->where('user_id', Auth::id())
+            ->where('payment_status', '!=', 'completed')
             ->latest()
             ->get();
 
@@ -21,6 +30,6 @@ class ClientDashboardController extends Controller
             ->latest()
             ->get();
 
-        return view('client.dashboard', compact('bookings', 'transactions'));
+        return view('client.dashboard', compact('bookings', 'pendingBookings', 'transactions'));
     }
 }

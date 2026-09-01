@@ -46,6 +46,11 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
+        if (session()->has('cart_package_slug')) {
+            $cartSlug = session()->pull('cart_package_slug');
+            return redirect()->route('booking.checkout', $cartSlug)->with('success', 'Account created successfully! You can now complete your package reservation.');
+        }
+
         return redirect(route('dashboard', absolute: false));
     }
 }

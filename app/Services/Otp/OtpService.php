@@ -11,7 +11,7 @@ class OtpService
     /**
      * Issue an OTP and dispatch via SMS
      */
-    public static function generateAndSend(?string $phone, ?string $email = null, ?string $name = null, string $action = 'booking_verification'): array
+    public static function generateAndSend(?string $phone, ?string $email = null, ?string $name = null, string $action = 'booking_verification', array $extra = []): array
     {
         if (empty($phone) && empty($email)) {
             return [
@@ -47,7 +47,7 @@ class OtpService
         // Dispatch Custom SMS if phone is provided
         $smsResult = ['success' => true];
         if ($phone) {
-            $smsResult = SmsManager::sendOtpSms($phone, $otpRecord->otp_code, $name);
+            $smsResult = SmsManager::sendOtpSms($phone, $otpRecord->otp_code, $name, $extra);
         }
 
         return [
