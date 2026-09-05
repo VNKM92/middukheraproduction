@@ -72,6 +72,8 @@ class BookingController extends Controller
         $otpRequired = Setting::get('otp_verification_required', '0') == '1';
         $clientPhone = $request->client_phone;
 
+       
+
         if ($otpRequired && !empty($clientPhone) && !empty($request->otp_token)) {
             $otpRecord = OtpVerification::where('token', $request->otp_token)->first();
             if (!$otpRecord || $otpRecord->status !== 'verified') {
@@ -81,6 +83,7 @@ class BookingController extends Controller
 
         $package = Package::findOrFail($request->package_id);
 
+            
         // 1. Create Booking record in pending status
         $booking = Booking::create([
             'user_id' => $user->id,
@@ -93,6 +96,7 @@ class BookingController extends Controller
             'customer_phone' => $clientPhone,
         ]);
 
+       
         // 2. Initialize Transaction Tracking record
         $transactionRef = 'TRX-' . strtoupper(Str::random(10));
         $transaction = Transaction::create([
@@ -108,6 +112,7 @@ class BookingController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
+          
         // 3. Create Razorpay Order via RazorpayService
         try {
             $orderResult = $this->razorpayService->createOrder(
@@ -131,6 +136,8 @@ class BookingController extends Controller
                 'raw_response' => $orderResult['raw'] ?? null,
             ]);
 
+           
+
             return view('booking.payment', [
                 'booking' => $booking,
                 'package' => $package,
@@ -139,6 +146,8 @@ class BookingController extends Controller
                 'keyId' => $this->razorpayService->getKeyId(),
                 'warning' => $orderResult['warning'] ?? null,
             ]);
+
+             
         } catch (\Exception $e) {
             return redirect()->back()->withInput()->with('error', 'Could not create Razorpay order: ' . $e->getMessage());
         }
@@ -196,6 +205,7 @@ class BookingController extends Controller
                     'customer_phone' => $request->client_phone,
                 ]);
 
+               
                 $transactionRef = 'TRX-' . strtoupper(Str::random(10));
                 $transaction = Transaction::create([
                     'transaction_ref' => $transactionRef,
@@ -238,6 +248,9 @@ class BookingController extends Controller
                     'raw_response' => $orderResult['raw'] ?? null,
                 ]);
             }
+
+           //  dd($booking);
+
 
             return response()->json([
                 'success' => true,

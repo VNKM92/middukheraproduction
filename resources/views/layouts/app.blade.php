@@ -118,53 +118,103 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        
+        <link rel="manifest" href="{{ asset('manifest.json') }}">
+        <link rel="manifest" href="{{ asset('build/manifest.json') }}">
+
+         <link rel="preload" as="style" href="{{url('public/build/assets/app-qCqL4GTJ.css')}}" />
+
+         <link rel="modulepreload" as="script" href="{{url('public/build/assets/app-D-c50wYQ.js')}}" />
+         
+         <link rel="stylesheet" href="{{url('public/build/assets/app-qCqL4GTJ.css')}}" />
+         
+         <script type="module" src="{{url('public/build/assets/app-D-c50wYQ.js')}}"></script>
+
+
     </head>
     <body class="font-sans antialiased dynamic-theme selection:bg-[var(--theme-primary)] selection:text-black">
-        <div class="min-h-screen site-bg flex flex-col justify-between">
-            <div>
-                @include('layouts.navigation')
-
-                <!-- Flash Messages -->
+        @if(request()->routeIs('admin.*'))
+            <!-- Full-Screen Dedicated Executive Admin Layout -->
+            <div class="min-h-screen site-bg">
+                <!-- Global Admin Toast Notifications -->
                 @if (session('success'))
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-                        <div class="p-4 rounded-xl site-card border border-emerald-500/30 text-emerald-300 flex items-center gap-3 shadow-lg shadow-emerald-900/10">
-                            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 shrink-0"></i>
-                            <span class="text-sm font-medium">{{ session('success') }}</span>
+                    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 6000)" class="fixed top-4 right-4 z-50 max-w-md transition duration-300">
+                        <div class="p-4 rounded-xl site-card border border-emerald-500/30 text-emerald-300 flex items-center justify-between gap-3 shadow-2xl backdrop-blur-xl bg-black/80">
+                            <div class="flex items-center gap-2.5">
+                                <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+                                <span class="text-xs font-semibold">{{ session('success') }}</span>
+                            </div>
+                            <button @click="show = false" class="text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
                         </div>
                     </div>
                 @endif
 
                 @if (session('error'))
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-                        <div class="p-4 rounded-xl site-card border border-rose-500/30 text-rose-300 flex items-center gap-3 shadow-lg shadow-rose-900/10">
-                            <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400 shrink-0"></i>
-                            <span class="text-sm font-medium">{{ session('error') }}</span>
+                    <div x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 8000)" class="fixed top-4 right-4 z-50 max-w-md transition duration-300">
+                        <div class="p-4 rounded-xl site-card border border-rose-500/30 text-rose-300 flex items-center justify-between gap-3 shadow-2xl backdrop-blur-xl bg-black/80">
+                            <div class="flex items-center gap-2.5">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400 shrink-0"></i>
+                                <span class="text-xs font-semibold">{{ session('error') }}</span>
+                            </div>
+                            <button @click="show = false" class="text-zinc-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
                         </div>
                     </div>
                 @endif
 
-                <!-- Page Heading -->
-                @isset($header)
-                    <header class="site-card border-b border-white/5 shadow-sm backdrop-blur-md sticky top-16 z-30">
-                        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-                            {{ $header }}
-                        </div>
-                    </header>
-                @endisset
-
-                <!-- Page Content -->
-                <main>
-                    @if(isset($slot))
-                        {{ $slot }}
-                    @else
-                        @yield('content')
-                    @endif
-                </main>
+                @if(isset($slot))
+                    {{ $slot }}
+                @else
+                    @yield('content')
+                @endif
             </div>
+        @else
+            <!-- Public Website / Client Portal Layout -->
+            <div class="min-h-screen site-bg flex flex-col justify-between">
+                <div>
+                    @include('layouts.navigation')
 
-            <!-- Global Footer -->
-            @include('layouts.footer')
-        </div>
+                    <!-- Flash Messages -->
+                    @if (session('success'))
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                            <div class="p-4 rounded-xl site-card border border-emerald-500/30 text-emerald-300 flex items-center gap-3 shadow-lg shadow-emerald-900/10">
+                                <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+                                <span class="text-sm font-medium">{{ session('success') }}</span>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if (session('error'))
+                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+                            <div class="p-4 rounded-xl site-card border border-rose-500/30 text-rose-300 flex items-center gap-3 shadow-lg shadow-rose-900/10">
+                                <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-400 shrink-0"></i>
+                                <span class="text-sm font-medium">{{ session('error') }}</span>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Page Heading -->
+                    @isset($header)
+                        <header class="site-card border-b border-white/5 shadow-sm backdrop-blur-md sticky top-16 z-30">
+                            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                                {{ $header }}
+                            </div>
+                        </header>
+                    @endisset
+
+                    <!-- Page Content -->
+                    <main>
+                        @if(isset($slot))
+                            {{ $slot }}
+                        @else
+                            @yield('content')
+                        @endif
+                    </main>
+                </div>
+
+                <!-- Global Footer -->
+                @include('layouts.footer')
+            </div>
+        @endif
 
         <!-- Scroll Reveal & Lucide Initializer Script -->
         <script>

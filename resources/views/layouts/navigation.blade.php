@@ -88,8 +88,11 @@
                         </x-slot>
                     </x-dropdown>
                 @else
-                    <a href="{{ route('login') }}" class="px-4 py-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors">
+                    <a href="{{ route('login') }}" class="px-3.5 py-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors">
                         Sign In
+                    </a>
+                    <a href="{{ route('register') }}" class="px-4 py-2 text-sm font-semibold rounded-full border border-white/20 text-white hover:border-[var(--theme-primary)] hover:text-theme-primary transition-all duration-200">
+                        Sign Up
                     </a>
                     <a href="{{ route('home') }}#packages" class="px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-full btn-gold-dynamic shadow-lg shadow-[var(--theme-primary)]/20">
                         Book Session
@@ -139,7 +142,7 @@
         @else
             <div class="pt-4 border-t border-white/10 flex flex-col gap-2">
                 <a href="{{ route('login') }}" class="block text-center py-2.5 text-sm font-medium text-white border border-white/10 rounded-xl hover:bg-white/5">Sign In</a>
-                <a href="{{ route('register') }}" class="block text-center py-2.5 text-sm font-bold uppercase tracking-wider rounded-xl btn-gold-dynamic">Register & Book</a>
+                <a href="{{ route('register') }}" class="block text-center py-2.5 text-sm font-bold uppercase tracking-wider rounded-xl btn-gold-dynamic">Create Account / Sign Up</a>
             </div>
         @endauth
     </div>

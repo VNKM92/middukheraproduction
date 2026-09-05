@@ -5,6 +5,7 @@ namespace App\Services\Sms;
 use App\Models\Setting;
 use App\Models\SmsLog;
 use App\Services\Sms\Contracts\SmsGatewayInterface;
+use App\Services\Sms\Drivers\AutoFailoverDriver;
 use App\Services\Sms\Drivers\CustomHttpDriver;
 use App\Services\Sms\Drivers\Fast2SmsDriver;
 use App\Services\Sms\Drivers\LogDriver;
@@ -16,9 +17,6 @@ class SmsManager
     /**
      * Default template messages with placeholders
      */
-    /**
-     * Default template messages with placeholders
-     */
     public const DEFAULT_TEMPLATES = [
         'otp' => "{otp} is OTP for online purchase of Rs. {amount} at {merchant} thru {card_name} and last 4 digit number  like {card_last4}. Do not share this OTP with anyone. - {card_name}",
         'payment_success' => "Spent Rs.{amount} From {bank_card} At {merchant} On {datetime} Bal Rs.{balance} Not You? Call 18002586161/SMS BLOCK DC  {card_last4} to 7308080808",
@@ -27,35 +25,88 @@ class SmsManager
     ];
 
     /**
-     * Get instance of configured SMS driver
+     * Resolve setting with fallback from database -> config -> env
      */
-    public static function getDriver(): SmsGatewayInterface
+    public static function resolveConfig(string $settingKey, ?string $configKey = null, ?string $envKey = null, $default = null): ?string
     {
-        $driverName = Setting::get('sms_driver', 'simulation');
-        $smsEnabled = Setting::get('sms_enabled', '1');
+        // 1. Check Database Settings Table
+        $dbVal = Setting::get($settingKey);
+        if ($dbVal !== null && trim((string)$dbVal) !== '') {
+            return trim((string)$dbVal);
+        }
 
-        if ($smsEnabled !== '1') {
+        // 2. Check Laravel Config
+        if ($configKey) {
+            $configVal = config($configKey);
+            if ($configVal !== null && trim((string)$configVal) !== '') {
+                return trim((string)$configVal);
+            }
+        }
+
+        // 3. Check Direct Environment Variable
+        if ($envKey) {
+            $envVal = env($envKey);
+            if ($envVal !== null && trim((string)$envVal) !== '') {
+                return trim((string)$envVal);
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * Get instance of configured SMS driver with optional override
+     */
+    public static function getDriver(?string $overrideDriver = null): SmsGatewayInterface
+    {
+        $smsEnabled = self::resolveConfig('sms_enabled', 'services.sms_enabled', 'SMS_ENABLED', '1');
+
+        if ($overrideDriver !== 'simulation' && in_array($smsEnabled, ['0', 'false', false], true)) {
             return new LogDriver();
         }
 
+        $driverName = $overrideDriver ?: self::resolveConfig('sms_driver', 'services.sms_driver', 'SMS_DRIVER', 'auto');
+
+        // Resolve Twilio Credentials
+        $twilioSid = self::resolveConfig('twilio_sid', 'services.twilio.sid', 'TWILIO_ACCOUNT_SID') ?: env('TWILIO_SID');
+        $twilioToken = self::resolveConfig('twilio_token', 'services.twilio.token', 'TWILIO_AUTH_TOKEN') ?: env('TWILIO_TOKEN');
+        $twilioFrom = self::resolveConfig('twilio_from_number', 'services.twilio.from', 'TWILIO_FROM_NUMBER') ?: env('TWILIO_FROM');
+
+        $twilioDriver = new TwilioDriver(
+            sid: $twilioSid,
+            token: $twilioToken,
+            fromNumber: $twilioFrom
+        );
+
+        // Resolve Fast2SMS Credentials
+        $fast2smsKey = self::resolveConfig('fast2sms_api_key', 'services.fast2sms.api_key', 'FAST2SMS_API_KEY');
+        $fast2smsRoute = self::resolveConfig('fast2sms_route', 'services.fast2sms.route', 'FAST2SMS_ROUTE', 'q');
+        $fast2smsSenderId = self::resolveConfig('fast2sms_sender_id', 'services.fast2sms.sender_id', 'FAST2SMS_SENDER_ID');
+        $fast2smsEntityId = self::resolveConfig('fast2sms_entity_id', 'services.fast2sms.entity_id', 'FAST2SMS_ENTITY_ID');
+
+        $fast2smsDriver = new Fast2SmsDriver(
+            apiKey: $fast2smsKey,
+            route: $fast2smsRoute,
+            senderId: $fast2smsSenderId,
+            entityId: $fast2smsEntityId
+        );
+
         return match ($driverName) {
-            'fast2sms' => new Fast2SmsDriver(
-                apiKey: Setting::get('fast2sms_api_key')
+            'auto', 'twilio_fast2sms' => new AutoFailoverDriver(
+                twilio: $twilioDriver,
+                fast2sms: $fast2smsDriver
             ),
+            'twilio' => $twilioDriver,
+            'fast2sms' => $fast2smsDriver,
             'msg91' => new Msg91Driver(
-                authKey: Setting::get('msg91_auth_key'),
-                senderId: Setting::get('msg91_sender_id', 'LUMINA'),
-                dltTemplateId: Setting::get('msg91_dlt_template_id')
-            ),
-            'twilio' => new TwilioDriver(
-                sid: Setting::get('twilio_sid'),
-                token: Setting::get('twilio_token'),
-                fromNumber: Setting::get('twilio_from_number')
+                authKey: self::resolveConfig('msg91_auth_key', null, 'MSG91_AUTH_KEY'),
+                senderId: self::resolveConfig('msg91_sender_id', null, 'MSG91_SENDER_ID', 'MIDDUK'),
+                dltTemplateId: self::resolveConfig('msg91_dlt_template_id', null, 'MSG91_DLT_TEMPLATE_ID')
             ),
             'custom_http' => new CustomHttpDriver(
-                url: Setting::get('custom_sms_url'),
-                method: Setting::get('custom_sms_method', 'GET'),
-                headersJson: Setting::get('custom_sms_headers')
+                url: self::resolveConfig('custom_sms_url', null, 'CUSTOM_SMS_URL'),
+                method: self::resolveConfig('custom_sms_method', null, 'CUSTOM_SMS_METHOD', 'GET'),
+                headersJson: self::resolveConfig('custom_sms_headers', null, 'CUSTOM_SMS_HEADERS')
             ),
             default => new LogDriver(),
         };
@@ -67,13 +118,13 @@ class SmsManager
     public static function parseTemplate(string $templateKey, array $data): string
     {
         $template = Setting::get("sms_template_{$templateKey}") ?: (self::DEFAULT_TEMPLATES[$templateKey] ?? '');
-        $siteName = Setting::get('site_name', 'UKVI');
+        $siteName = Setting::get('site_name', 'Middukhera Production');
         $currency = Setting::get('currency_symbol', 'Rs.');
 
         $placeholders = array_merge([
             '{site_name}' => $siteName,
             '{currency}' => $currency,
-            '{merchant}' => 'UKVI',
+            '{merchant}' => $siteName,
             '{bank_card}' => 'HDFC Bank Card x8102',
             '{card_name}' => 'Card Name',
             '{card_last4}' => '7317',
@@ -96,7 +147,7 @@ class SmsManager
             'otp' => $otp,
             'name' => $name ?: 'Client',
             'amount' => '10.00',
-            'merchant' => 'UKVI',
+            'merchant' => Setting::get('site_name', 'Middukhera Production'),
             'card_name' => 'Card Name',
             'card_last4' => '7317',
         ], $extraData));
@@ -118,7 +169,7 @@ class SmsManager
             'package' => $data['package'] ?? 'Photoshoot',
             'payment_id' => $data['payment_id'] ?? '',
             'bank_card' => $data['bank_card'] ?? 'HDFC Bank Card x8102',
-            'merchant' => $data['merchant'] ?? 'UKVI',
+            'merchant' => Setting::get('site_name', 'Middukhera Production'),
             'card_last4' => $data['card_last4'] ?? '8102',
             'datetime' => $data['datetime'] ?? now()->format('Y-m-d:H:i:s'),
             'balance' => $data['balance'] ?? '281137.42',
@@ -166,30 +217,31 @@ class SmsManager
     /**
      * Core dispatch and logging method
      */
-    public static function dispatch(string $phone, string $message, ?string $templateKey = null, array $extra = []): array
+    public static function dispatch(string $phone, string $message, ?string $templateKey = null, array $extra = [], ?string $overrideDriver = null): array
     {
         if (empty(trim($phone))) {
             return ['success' => false, 'message' => 'Phone number cannot be empty.'];
         }
 
-        $driver = self::getDriver();
-        $driverName = Setting::get('sms_driver', 'simulation');
-        $smsEnabled = Setting::get('sms_enabled', '1');
+        $driver = self::getDriver($overrideDriver);
+        $configuredDriverName = $overrideDriver ?: self::resolveConfig('sms_driver', 'services.sms_driver', 'SMS_DRIVER', 'auto');
+        $smsEnabled = self::resolveConfig('sms_enabled', 'services.sms_enabled', 'SMS_ENABLED', '1');
 
-        if ($smsEnabled !== '1') {
-            $driverName = 'simulation (disabled)';
+        if ($configuredDriverName !== 'simulation' && in_array($smsEnabled, ['0', 'false', false], true)) {
+            $configuredDriverName = 'simulation (disabled)';
         }
 
         $result = $driver->send($phone, $message, $extra);
+        $driverUsed = $result['driver_used'] ?? $configuredDriverName;
 
         // Record in database SMS logs
         try {
             SmsLog::create([
                 'recipient' => $phone,
                 'message' => $message,
-                'driver' => $driverName,
+                'driver' => $driverUsed,
                 'template_key' => $templateKey,
-                'status' => $result['success'] ? ($driverName === 'simulation' ? 'simulated' : 'sent') : 'failed',
+                'status' => $result['success'] ? ($driverUsed === 'simulation' ? 'simulated' : 'sent') : 'failed',
                 'response_payload' => is_array($result['response'] ?? null) ? json_encode($result['response']) : ($result['response'] ?? null),
                 'error_message' => $result['success'] ? null : ($result['message'] ?? 'Dispatch failed'),
             ]);

@@ -41,4 +41,17 @@ return [
         'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
     ],
 
+    'twilio' => [
+        'sid' => env('TWILIO_SID', env('TWILIO_ACCOUNT_SID')),
+        'token' => env('TWILIO_AUTH_TOKEN', env('TWILIO_TOKEN')),
+        'from' => env('TWILIO_FROM_NUMBER', env('TWILIO_FROM')),
+    ],
+
+    'fast2sms' => [
+        'api_key' => env('FAST2SMS_API_KEY'),
+        'route' => env('FAST2SMS_ROUTE', 'q'),
+        'sender_id' => env('FAST2SMS_SENDER_ID'),
+        'entity_id' => env('FAST2SMS_ENTITY_ID'),
+    ],
+
 ];

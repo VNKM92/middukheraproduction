@@ -1,96 +1,309 @@
 @extends('layouts.app')
 
 @section('content')
-<div style="background-color:#6a299c;" class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8" x-data="{ activeTab: 'overview', editingPackage: null }">
+<div x-data="{
+    activeTab: 'overview',
+    sidebarOpen: true,
+    mobileSidebarOpen: false,
+    editingPackage: null,
+    selectedWebhook: null
+}" class="min-h-screen bg-[var(--theme-bg,#07060a)] flex relative">
 
-    <!-- Top Admin Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-8 border-b border-white/10">
-        <div>
+    <!-- Mobile Backdrop Blur -->
+    <div x-show="mobileSidebarOpen" 
+         x-transition:enter="transition-opacity ease-linear duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition-opacity ease-linear duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="mobileSidebarOpen = false" 
+         class="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm lg:hidden" 
+         style="display: none;"></div>
+
+    <!-- ============================================== -->
+    <!-- EXECUTIVE ADMIN SIDEBAR NAVIGATION -->
+    <!-- ============================================== -->
+    <aside :class="{
+            'translate-x-0': mobileSidebarOpen,
+            '-translate-x-full': !mobileSidebarOpen,
+            'lg:translate-x-0': true,
+            'lg:w-72': sidebarOpen,
+            'lg:w-0 lg:overflow-hidden lg:border-r-0 lg:p-0 lg:opacity-0': !sidebarOpen
+        }" 
+        class="fixed inset-y-0 left-0 z-50 w-72 h-screen sticky top-0 bg-[#0c0a14] border-r border-white/10 flex flex-col justify-between transition-all duration-300 ease-in-out lg:z-auto lg:shrink-0">
+        
+        <!-- Sidebar Brand / Header -->
+        <div class="p-5 border-b border-white/10 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <span class="px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">Super Admin Console</span>
-                <span class="text-xs text-zinc-400">Live Studio Engine</span>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--theme-primary)] to-[var(--theme-secondary)] p-0.5 shadow-lg shadow-[var(--theme-primary)]/20">
+                    <div class="w-full h-full bg-[#0c0a14] rounded-[10px] flex items-center justify-center">
+                        <i data-lucide="shield-check" class="w-5 h-5 text-theme-primary"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs font-serif font-bold text-white tracking-widest uppercase">Middukhera</div>
+                    <div class="text-[10px] font-mono text-[var(--theme-primary)] uppercase tracking-wider">Super Admin</div>
+                </div>
             </div>
-            <h1 class="text-3xl font-serif font-bold text-white mt-2">Executive Studio Dashboard</h1>
-            <p class="text-sm text-zinc-400 mt-1">Manage bookings, pricing tiers, portfolio showcase, journal stories, and customize your live theme colors in real time.</p>
+
+            <!-- Mobile Close Button -->
+            <button type="button" @click="mobileSidebarOpen = false" class="lg:hidden p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
         </div>
 
-        <div class="flex items-center gap-3">
-            <a href="{{ route('home') }}" target="_blank" class="px-4 py-2 text-xs font-semibold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center gap-2 transition">
-                <i data-lucide="external-link" class="w-4 h-4 text-theme-primary"></i>
-                <span>View Live Site</span>
-            </a>
-            <a href="{{ route('sitemap.xml') }}" target="_blank" class="px-4 py-2 text-xs font-semibold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center gap-2 transition">
-                <i data-lucide="globe" class="w-4 h-4 text-emerald-400"></i>
-                <span>Sitemap XML</span>
-            </a>
+        <!-- Sidebar Navigation Menu Items -->
+        <div class="flex-1 overflow-y-auto px-3.5 py-4 space-y-6 scrollbar-thin">
+            <!-- GROUP 1: CORE & METRICS -->
+            <div class="space-y-1">
+                <span class="px-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Core Operations</span>
+                
+                <!-- 1. Overview -->
+                <button type="button" @click="activeTab = 'overview'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'overview' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'overview' ? 'text-black' : 'text-amber-400'"></i>
+                        <span>Executive Overview</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" :class="activeTab === 'overview' ? 'opacity-100 text-black' : ''"></i>
+                </button>
+
+                <!-- 2. Bookings -->
+                <button type="button" @click="activeTab = 'bookings'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'bookings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="calendar" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'bookings' ? 'text-black' : 'text-cyan-400'"></i>
+                        <span>Bookings</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'bookings' ? 'bg-black/20 text-black' : 'bg-cyan-500/20 text-cyan-300'">
+                        {{ count($bookings) }}
+                    </span>
+                </button>
+
+                <!-- 3. Transactions -->
+                <button type="button" @click="activeTab = 'transactions'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'transactions' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="credit-card" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'transactions' ? 'text-black' : 'text-emerald-400'"></i>
+                        <span>Transactions</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'transactions' ? 'bg-black/20 text-black' : 'bg-emerald-500/20 text-emerald-300'">
+                        {{ count($transactions) }}
+                    </span>
+                </button>
+            </div>
+
+            <!-- GROUP 2: STUDIO CATALOG & MEDIA -->
+            <div class="space-y-1">
+                <span class="px-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Catalog & Creative</span>
+
+                <!-- 4. Packages -->
+                <button type="button" @click="activeTab = 'packages'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'packages' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="layers" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'packages' ? 'text-black' : 'text-amber-400'"></i>
+                        <span>Pricing Packages</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'packages' ? 'bg-black/20 text-black' : 'bg-amber-500/20 text-amber-300'">
+                        {{ count($packages) }}
+                    </span>
+                </button>
+
+                <!-- 5. Gallery Showcase -->
+                <button type="button" @click="activeTab = 'gallery'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'gallery' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="image" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'gallery' ? 'text-black' : 'text-emerald-400'"></i>
+                        <span>Portfolio Gallery</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'gallery' ? 'bg-black/20 text-black' : 'bg-white/10 text-zinc-400'">
+                        {{ count($gallery) }}
+                    </span>
+                </button>
+
+                <!-- 6. Journal Articles -->
+                <button type="button" @click="activeTab = 'blogs'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'blogs' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="book-open" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'blogs' ? 'text-black' : 'text-blue-400'"></i>
+                        <span>Studio Journal</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'blogs' ? 'bg-black/20 text-black' : 'bg-blue-500/20 text-blue-300'">
+                        {{ count($blogs) }}
+                    </span>
+                </button>
+
+                <!-- 7. Vendors / Photographers -->
+                <button type="button" @click="activeTab = 'vendors'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'vendors' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="camera" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'vendors' ? 'text-black' : 'text-teal-400'"></i>
+                        <span>Photographers</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'vendors' ? 'bg-black/20 text-black' : 'bg-teal-500/20 text-teal-300'">
+                        {{ count($vendors) }}
+                    </span>
+                </button>
+
+                <!-- 8. Inquiries -->
+                <button type="button" @click="activeTab = 'messages'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'messages' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="mail" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'messages' ? 'text-black' : 'text-violet-400'"></i>
+                        <span>Contact Inquiries</span>
+                    </div>
+                    @if($unreadMessagesCount > 0)
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white animate-pulse">
+                            {{ $unreadMessagesCount }} New
+                        </span>
+                    @else
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold" :class="activeTab === 'messages' ? 'bg-black/20 text-black' : 'bg-white/10 text-zinc-400'">
+                            {{ count($messages) }}
+                        </span>
+                    @endif
+                </button>
+            </div>
+
+            <!-- GROUP 3: GATEWAYS & ENGINE CONFIG -->
+            <div class="space-y-1">
+                <span class="px-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Gateways & System</span>
+
+                <!-- 9. SMS Engine -->
+                <button type="button" @click="activeTab = 'sms_settings'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'sms_settings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="message-square" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'sms_settings' ? 'text-black' : 'text-amber-400'"></i>
+                        <span>Custom SMS Engine</span>
+                    </div>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400" title="Active Failover"></span>
+                </button>
+
+                <!-- 10. Razorpay & Webhooks -->
+                <button type="button" @click="activeTab = 'webhooks'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'webhooks' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="webhook" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'webhooks' ? 'text-black' : 'text-indigo-400'"></i>
+                        <span>Razorpay & Webhooks</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" :class="activeTab === 'webhooks' ? 'opacity-100 text-black' : ''"></i>
+                </button>
+
+                <!-- 11. Theme & Colors -->
+                <button type="button" @click="activeTab = 'theme_settings'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'theme_settings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="palette" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'theme_settings' ? 'text-black' : 'text-pink-400'"></i>
+                        <span>Theme & Live Colors</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" :class="activeTab === 'theme_settings' ? 'opacity-100 text-black' : ''"></i>
+                </button>
+
+                <!-- 12. Site & SEO Config -->
+                <button type="button" @click="activeTab = 'site_settings'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'site_settings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="settings" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'site_settings' ? 'text-black' : 'text-zinc-300'"></i>
+                        <span>Site & SEO Config</span>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" :class="activeTab === 'site_settings' ? 'opacity-100 text-black' : ''"></i>
+                </button>
+            </div>
         </div>
-    </div>
 
-    <!-- Navigation Tabs -->
-    <div style="background-color:#5b1690;" class="flex items-center gap-2 overflow-x-auto py-6 border-b border-white/5 scrollbar-none">
-        <button @click="activeTab = 'overview'" :class="activeTab === 'overview' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-            <span>Overview</span>
-        </button>
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t border-white/10 space-y-3 bg-black/40">
+            <div class="flex items-center justify-between">
+                <a href="{{ route('home') }}" target="_blank" class="text-[11px] font-semibold text-zinc-400 hover:text-white flex items-center gap-1.5 transition">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5 text-theme-primary"></i>
+                    <span>Live Website</span>
+                </a>
+                <a href="{{ route('sitemap.xml') }}" target="_blank" class="text-[11px] font-semibold text-zinc-400 hover:text-white flex items-center gap-1.5 transition">
+                    <i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span>Sitemap</span>
+                </a>
+            </div>
 
-        <button @click="activeTab = 'theme_settings'" :class="activeTab === 'theme_settings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="palette" class="w-4 h-4 text-pink-400"></i>
-            <span>Theme & Colors</span>
-        </button>
+            <div class="pt-2 border-t border-white/5 flex items-center justify-between text-[10px] text-zinc-500">
+                <span>Production Engine</span>
+                <span class="font-mono text-theme-primary">v2.4 Active</span>
+            </div>
+        </div>
+    </aside>
 
-        <button @click="activeTab = 'site_settings'" :class="activeTab === 'site_settings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="settings" class="w-4 h-4"></i>
-            <span>Site & SEO Config</span>
-        </button>
+    <!-- ============================================== -->
+    <!-- MAIN CONTENT AREA -->
+    <!-- ============================================== -->
+    <div class="flex-1 min-w-0 flex flex-col overflow-hidden">
+        <!-- Top Sticky Header Bar with Show/Off Toggle Button -->
+        <header class="sticky top-0 z-30 bg-[#0c0a14]/90 backdrop-blur-md border-b border-white/10 px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+            <!-- Left: Sidebar Toggle Button + Dynamic Active Page Breadcrumb -->
+            <div class="flex items-center gap-3">
+                <!-- Desktop Sidebar Toggle Button (Show/Off Sidebar) -->
+                <button type="button" @click="sidebarOpen = !sidebarOpen" 
+                    class="hidden lg:flex px-3 py-1.5 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition items-center gap-2 shadow-sm" 
+                    title="Toggle Sidebar On/Off">
+                    <i data-lucide="panel-left" class="w-4 h-4 text-theme-primary"></i>
+                    <span x-text="sidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'"></span>
+                </button>
+                
+                <!-- Mobile Sidebar Hamburger Toggle Button -->
+                <button type="button" @click="mobileSidebarOpen = true" 
+                    class="lg:hidden p-2 rounded-xl text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition flex items-center justify-center" 
+                    title="Open Sidebar Menu">
+                    <i data-lucide="menu" class="w-5 h-5 text-theme-primary"></i>
+                </button>
 
-        <button @click="activeTab = 'bookings'" :class="activeTab === 'bookings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="calendar" class="w-4 h-4 text-cyan-400"></i>
-            <span>Bookings ({{ count($bookings) }})</span>
-        </button>
+                <div class="h-4 w-px bg-white/10 hidden sm:block"></div>
 
-        <button @click="activeTab = 'transactions'" :class="activeTab === 'transactions' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="credit-card" class="w-4 h-4 text-emerald-400"></i>
-            <span>Transactions ({{ count($transactions) }})</span>
-        </button>
+                <!-- Active Page Title / Section Indicator -->
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] text-zinc-500 font-mono hidden md:inline">Dashboard /</span>
+                    <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5" x-text="
+                        activeTab === 'overview' ? 'Executive Overview' :
+                        activeTab === 'theme_settings' ? 'Theme & Live Colors' :
+                        activeTab === 'site_settings' ? 'Site & SEO Configuration' :
+                        activeTab === 'bookings' ? 'Bookings Management' :
+                        activeTab === 'transactions' ? 'Captured Transactions' :
+                        activeTab === 'sms_settings' ? 'Custom SMS Engine' :
+                        activeTab === 'webhooks' ? 'Razorpay Webhooks & Gateway' :
+                        activeTab === 'packages' ? 'Studio Pricing Packages' :
+                        activeTab === 'gallery' ? 'Master Portfolio Showcase' :
+                        activeTab === 'blogs' ? 'Studio Journal & Articles' :
+                        activeTab === 'messages' ? 'Concierge Contact Inquiries' :
+                        activeTab === 'vendors' ? 'Photographer Partners' : 'Dashboard'
+                    "></h2>
+                </div>
+            </div>
 
-        <button @click="activeTab = 'sms_settings'" :class="activeTab === 'sms_settings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="message-square" class="w-4 h-4 text-amber-400"></i>
-            <span>Custom SMS Engine</span>
-        </button>
+            <!-- Right: Quick Navigation & Status -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <a href="{{ route('home') }}" target="_blank" class="px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center gap-1.5 transition">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5 text-theme-primary"></i>
+                    <span class="hidden sm:inline">View Live Site</span>
+                </a>
+                <a href="{{ route('sitemap.xml') }}" target="_blank" class="px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl flex items-center gap-1.5 transition">
+                    <i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-400"></i>
+                    <span class="hidden sm:inline">Sitemap XML</span>
+                </a>
+            </div>
+        </header>
 
-        <button @click="activeTab = 'webhooks'" :class="activeTab === 'webhooks' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="webhook" class="w-4 h-4 text-indigo-400"></i>
-            <span>Razorpay & Webhooks</span>
-        </button>
+        <!-- Main Content Area -->
+        <main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-8 overflow-y-auto max-w-7xl w-full mx-auto">
 
-        <button @click="activeTab = 'packages'" :class="activeTab === 'packages' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="layers" class="w-4 h-4 text-amber-400"></i>
-            <span>Packages ({{ count($packages) }})</span>
-        </button>
-
-        <button @click="activeTab = 'gallery'" :class="activeTab === 'gallery' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="image" class="w-4 h-4 text-emerald-400"></i>
-            <span>Gallery ({{ count($gallery) }})</span>
-        </button>
-
-        <button @click="activeTab = 'blogs'" :class="activeTab === 'blogs' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="book-open" class="w-4 h-4 text-blue-400"></i>
-            <span>Journal Articles ({{ count($blogs) }})</span>
-        </button>
-
-        <button @click="activeTab = 'messages'" :class="activeTab === 'messages' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="mail" class="w-4 h-4 text-violet-400"></i>
-            <span>Inquiries ({{ count($messages) }})</span>
-            @if($unreadMessagesCount > 0)
-                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-            @endif
-        </button>
-
-        <button @click="activeTab = 'vendors'" :class="activeTab === 'vendors' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" class="px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 shrink-0 flex items-center gap-2">
-            <i data-lucide="camera" class="w-4 h-4 text-teal-400"></i>
-            <span>Photographers ({{ count($vendors) }})</span>
-        </button>
-    </div>
 
     <!-- TAB 1: OVERVIEW -->
     <div x-show="activeTab === 'overview'" class="mt-8 space-y-8">
@@ -812,16 +1025,103 @@
                             <span>Checkout Link</span>
                             <i data-lucide="external-link" class="w-3 h-3"></i>
                         </a>
-                        <form method="POST" action="{{ route('admin.package.delete', $pkg) }}" onsubmit="return confirm('Delete this package?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <div class="flex items-center gap-1">
+                            <button type="button" @click="editingPackage = {
+                                id: '{{ $pkg->id }}',
+                                name: {{ json_encode($pkg->name) }},
+                                price_min: '{{ $pkg->price_min }}',
+                                price_max: '{{ $pkg->price_max }}',
+                                description: {{ json_encode($pkg->description) }},
+                                features: {{ json_encode(is_array($pkg->features) ? implode(', ', $pkg->features) : (is_string($pkg->features) ? implode(', ', (array)json_decode($pkg->features, true) ?: [$pkg->features]) : '')) }},
+                                image_path: {{ json_encode($pkg->image_path) }},
+                                action: '{{ route('admin.package.update', $pkg) }}'
+                            }" class="px-2.5 py-1.5 text-zinc-400 hover:text-amber-300 hover:bg-amber-400/10 rounded-lg transition flex items-center gap-1 text-xs font-semibold">
+                                <i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-400"></i>
+                                <span>Edit</span>
                             </button>
-                        </form>
+                            <form method="POST" action="{{ route('admin.package.delete', $pkg) }}" onsubmit="return confirm('Delete this package?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="p-2 text-zinc-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             @endforeach
+        </div>
+
+        <!-- Edit Package Modal Dialog -->
+        <div x-show="editingPackage !== null" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity" @click="editingPackage = null"></div>
+
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="relative w-full max-w-2xl rounded-2xl bg-[#12101b] border border-amber-500/30 p-6 shadow-2xl space-y-6" @click.stop>
+                    <div class="flex items-center justify-between border-b border-white/10 pb-4">
+                        <h3 class="text-base font-bold text-white flex items-center gap-2">
+                            <i data-lucide="edit-3" class="w-5 h-5 text-amber-400"></i>
+                            <span>Edit Studio Package</span>
+                        </h3>
+                        <button type="button" @click="editingPackage = null" class="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+
+                    <form method="POST" :action="editingPackage ? editingPackage.action : ''" enctype="multipart/form-data" class="space-y-4">
+                        @csrf
+                        @method('PATCH')
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="space-y-1 sm:col-span-2">
+                                <label class="text-xs font-semibold text-zinc-300">Package Name</label>
+                                <input type="text" name="name" x-model="editingPackage.name" required class="w-full px-4 py-2 text-xs rounded-xl bg-black/50 border border-white/15 text-white focus:border-theme-primary">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-zinc-300">Min Price (₹)</label>
+                                <input type="number" name="price_min" x-model="editingPackage.price_min" required class="w-full px-4 py-2 text-xs rounded-xl bg-black/50 border border-white/15 text-white focus:border-theme-primary">
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-xs font-semibold text-zinc-300">Max Price (₹)</label>
+                                <input type="number" name="price_max" x-model="editingPackage.price_max" required class="w-full px-4 py-2 text-xs rounded-xl bg-black/50 border border-white/15 text-white focus:border-theme-primary">
+                            </div>
+
+                            <div class="space-y-1 sm:col-span-2">
+                                <label class="text-xs font-semibold text-zinc-300">Cover Image URL</label>
+                                <input type="url" name="image_url" x-model="editingPackage.image_path" placeholder="https://images.unsplash.com/..." class="w-full px-4 py-2 text-xs rounded-xl bg-black/50 border border-white/15 text-white focus:border-theme-primary font-mono">
+                            </div>
+
+                            <div class="space-y-1 sm:col-span-2">
+                                <label class="text-xs font-semibold text-zinc-300">Or Upload New Image File</label>
+                                <input type="file" name="image" accept="image/*" class="w-full px-3 py-1.5 text-xs rounded-xl bg-black/50 border border-white/15 text-zinc-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500/20 file:text-amber-300 hover:file:bg-amber-500/30">
+                            </div>
+
+                            <div class="space-y-1 sm:col-span-2">
+                                <label class="text-xs font-semibold text-zinc-300">Description</label>
+                                <textarea name="description" rows="3" x-model="editingPackage.description" required class="w-full px-4 py-2 text-xs rounded-xl bg-black/50 border border-white/15 text-white focus:border-theme-primary"></textarea>
+                            </div>
+
+                            <div class="space-y-1 sm:col-span-2">
+                                <label class="text-xs font-semibold text-zinc-300">Package Features (Comma separated)</label>
+                                <input type="text" name="features" x-model="editingPackage.features" required class="w-full px-4 py-2 text-xs rounded-xl bg-black/50 border border-white/15 text-white focus:border-theme-primary">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+                            <button type="button" @click="editingPackage = null" class="px-4 py-2 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-5 py-2 rounded-xl btn-gold-dynamic text-xs font-bold flex items-center gap-1.5 shadow-lg">
+                                <i data-lucide="save" class="w-4 h-4"></i>
+                                <span>Save Changes</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1322,22 +1622,61 @@
                     <div class="space-y-1">
                         <label class="text-xs font-semibold text-zinc-300">Active SMS Gateway Driver</label>
                         <select name="sms_driver" class="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-medium">
-                            <option value="simulation" {{ ($allSettings['sms_driver'] ?? 'simulation') == 'simulation' ? 'selected' : '' }}>Log & Simulation Mode (Dev / Test without live SMS credits)</option>
+                            <option value="auto" {{ ($allSettings['sms_driver'] ?? 'auto') == 'auto' ? 'selected' : '' }}>⭐ Multi-Gateway Auto Failover (Twilio First &rarr; Fast2SMS Fallback)</option>
+                            <option value="twilio" {{ ($allSettings['sms_driver'] ?? '') == 'twilio' ? 'selected' : '' }}>Twilio (Global International SMS)</option>
                             <option value="fast2sms" {{ ($allSettings['sms_driver'] ?? '') == 'fast2sms' ? 'selected' : '' }}>Fast2SMS (Quick SMS for India)</option>
                             <option value="msg91" {{ ($allSettings['sms_driver'] ?? '') == 'msg91' ? 'selected' : '' }}>MSG91 (Enterprise Flow API & DLT)</option>
-                            <option value="twilio" {{ ($allSettings['sms_driver'] ?? '') == 'twilio' ? 'selected' : '' }}>Twilio (Global International SMS)</option>
                             <option value="custom_http" {{ ($allSettings['sms_driver'] ?? '') == 'custom_http' ? 'selected' : '' }}>Custom HTTP Webhook / Generic SMS URL Gateway</option>
+                            <option value="simulation" {{ ($allSettings['sms_driver'] ?? '') == 'simulation' ? 'selected' : '' }}>Log & Simulation Mode (Dev / Test without live SMS credits)</option>
                         </select>
+                    </div>
+
+                    <!-- Twilio Fields -->
+                    <div class="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                                <i data-lucide="phone-call" class="w-3.5 h-3.5 text-rose-400"></i> Twilio SMS Credentials (Primary Gateway)
+                            </span>
+                            <span class="text-[10px] text-zinc-400">Works with DB or .env</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="space-y-1">
+                                <label class="text-[11px] text-zinc-400">Twilio Account SID</label>
+                                <input type="text" name="twilio_sid" value="{{ $allSettings['twilio_sid'] ?? '' }}" placeholder="ACxxxxxxxx" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] text-zinc-400">Twilio Auth Token</label>
+                                <input type="password" name="twilio_token" value="{{ $allSettings['twilio_token'] ?? '' }}" placeholder="Auth Token" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] text-zinc-400">From Phone Number</label>
+                                <input type="text" name="twilio_from_number" value="{{ $allSettings['twilio_from_number'] ?? '' }}" placeholder="+1234567890" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Fast2SMS Fields -->
                     <div class="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
-                        <span class="text-xs font-bold text-white flex items-center gap-1.5">
-                            <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Fast2SMS Credentials
-                        </span>
-                        <div class="space-y-1">
-                            <label class="text-[11px] text-zinc-400">Fast2SMS Authorization API Key</label>
-                            <input type="password" name="fast2sms_api_key" value="{{ $allSettings['fast2sms_api_key'] ?? '' }}" placeholder="Paste Fast2SMS API Key" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                                <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Fast2SMS Credentials (Secondary / India Gateway)
+                            </span>
+                            <span class="text-[10px] text-zinc-400">Works with DB or .env</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="sm:col-span-2 space-y-1">
+                                <label class="text-[11px] text-zinc-400">Fast2SMS Authorization API Key</label>
+                                <input type="password" name="fast2sms_api_key" value="{{ $allSettings['fast2sms_api_key'] ?? '' }}" placeholder="Paste Fast2SMS API Key" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] text-zinc-400">SMS Route</label>
+                                <select name="fast2sms_route" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                                    <option value="q" {{ ($allSettings['fast2sms_route'] ?? 'q') == 'q' ? 'selected' : '' }}>Quick SMS (q)</option>
+                                    <option value="otp" {{ ($allSettings['fast2sms_route'] ?? '') == 'otp' ? 'selected' : '' }}>OTP Route (otp)</option>
+                                    <option value="v3" {{ ($allSettings['fast2sms_route'] ?? '') == 'v3' ? 'selected' : '' }}>Promotional (v3)</option>
+                                    <option value="dlt" {{ ($allSettings['fast2sms_route'] ?? '') == 'dlt' ? 'selected' : '' }}>DLT Manual (dlt)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -1349,32 +1688,11 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="space-y-1">
                                 <label class="text-[11px] text-zinc-400">MSG91 Auth Key</label>
-                                <input type="password" name="msg91_auth_key" value="{{ $allSettings['msg91_auth_key'] ?? '' }}" placeholder="Auth Key" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                                <input type="password" name="msg91_auth_key" value="{{ $allSettings['msg91_auth_key'] ?? '' }}" placeholder="Auth Key" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
                             </div>
                             <div class="space-y-1">
                                 <label class="text-[11px] text-zinc-400">Sender ID (DLT Header)</label>
                                 <input type="text" name="msg91_sender_id" value="{{ $allSettings['msg91_sender_id'] ?? 'MIDDUK' }}" placeholder="e.g. MIDDUK" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Twilio Fields -->
-                    <div class="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
-                        <span class="text-xs font-bold text-white flex items-center gap-1.5">
-                            <i data-lucide="phone-call" class="w-3.5 h-3.5 text-rose-400"></i> Twilio Global SMS Credentials
-                        </span>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div class="space-y-1">
-                                <label class="text-[11px] text-zinc-400">Twilio Account SID</label>
-                                <input type="text" name="twilio_sid" value="{{ $allSettings['twilio_sid'] ?? '' }}" placeholder="ACxxxxxxxx" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-[11px] text-zinc-400">Twilio Auth Token</label>
-                                <input type="password" name="twilio_token" value="{{ $allSettings['twilio_token'] ?? '' }}" placeholder="Auth Token" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-[11px] text-zinc-400">From Phone Number</label>
-                                <input type="text" name="twilio_from_number" value="{{ $allSettings['twilio_from_number'] ?? '' }}" placeholder="+1234567890" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
                             </div>
                         </div>
                     </div>
@@ -1430,18 +1748,30 @@
                         <i data-lucide="send" class="w-4 h-4 text-amber-400"></i>
                         <span>Send Test SMS Tool</span>
                     </h4>
-                    <p class="text-xs text-zinc-400">Test your active SMS gateway driver and verify instant delivery.</p>
+                    <p class="text-xs text-zinc-400">Test Twilio, Fast2SMS, or Auto Failover mode and verify instant delivery.</p>
 
                     <form method="POST" action="{{ route('admin.sms.test') }}" class="space-y-3">
                         @csrf
                         <div class="space-y-1">
+                            <label class="text-[11px] text-zinc-300 font-semibold">Gateway / Driver to Test</label>
+                            <select name="test_driver" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                                <option value="auto">Auto (Twilio Primary &rarr; Fast2SMS Fallback)</option>
+                                <option value="twilio">Twilio Gateway Direct</option>
+                                <option value="fast2sms">Fast2SMS Gateway Direct</option>
+                                <option value="msg91">MSG91 Gateway Direct</option>
+                                <option value="custom_http">Custom HTTP Gateway</option>
+                                <option value="simulation">Simulation / Log Driver</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-1">
                             <label class="text-[11px] text-zinc-300 font-semibold">Recipient Mobile Number</label>
-                            <input type="text" name="test_phone" required placeholder="+91 98765 43210" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                            <input type="text" name="test_phone" required placeholder="+91 98765 43210 or 9876543210" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-[11px] text-zinc-300 font-semibold">Message Content</label>
-                            <textarea name="test_message" rows="2" required class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">Hello from Middukhera Production! This is a test SMS dispatch from your Laravel Razorpay gateway engine.</textarea>
+                            <textarea name="test_message" rows="2" required class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">Hello from Middukhera Production! This is a live test SMS dispatch from your SMS gateway engine.</textarea>
                         </div>
 
                         <button type="submit" class="w-full py-2.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-400 text-black shadow-md flex items-center justify-center gap-1.5 transition">
@@ -1642,5 +1972,7 @@
         </div>
     </div>
 
+        </main>
+    </div>
 </div>
 @endsection

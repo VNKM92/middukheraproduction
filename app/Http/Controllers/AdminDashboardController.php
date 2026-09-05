@@ -92,19 +92,28 @@ class AdminDashboardController extends Controller
         $request->validate([
             'test_phone' => 'required|string|min:8|max:20',
             'test_message' => 'required|string|max:500',
+            'test_driver' => 'nullable|string|in:auto,twilio,fast2sms,msg91,custom_http,simulation',
         ]);
+
+        $testDriver = $request->input('test_driver');
 
         $result = SmsManager::dispatch(
             phone: $request->test_phone,
-            message: $request->test_message,
-            templateKey: 'admin_test'
+            // message: $request->test_message,
+            message: 'sms_2fa',
+            templateKey: 'admin_test',
+            overrideDriver: $testDriver
         );
 
+
+        //dd($result);
+
         if ($result['success']) {
-            return redirect()->back()->with('success', 'Test SMS successfully dispatched! Check SMS logs below or check recipient device. ' . ($result['message'] ?? ''));
+            $driverUsed = $result['driver_used'] ?? ($testDriver ?: Setting::get('sms_driver', 'auto'));
+            return redirect()->back()->with('success', "Test SMS successfully dispatched via [{$driverUsed}]! Result: " . ($result['message'] ?? 'Dispatched.'));
         }
 
-        return redirect()->back()->with('error', 'Test SMS failed: ' . ($result['message'] ?? 'Unknown error occurred.'));
+        return redirect()->back()->with('error', 'Test SMS failed: ' . ($result['message'] ?? 'Unknown error occurred. Please verify your API credentials.'));
     }
 
     /**
@@ -312,9 +321,18 @@ class AdminDashboardController extends Controller
             'description' => 'required|string',
             'features' => 'required|string',
             'image_url' => 'nullable|url',
+            'image' => 'nullable|image|max:5120',
         ]);
 
         $featuresArray = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $request->features))));
+
+        $imagePath = $package->image_path;
+        if ($request->hasFile('image')) {
+            $stored = $request->file('image')->store('uploads', 'public');
+            $imagePath = \Illuminate\Support\Facades\Storage::url($stored);
+        } elseif ($request->filled('image_url')) {
+            $imagePath = $request->image_url;
+        }
 
         $package->update([
             'name' => $request->name,
@@ -322,7 +340,7 @@ class AdminDashboardController extends Controller
             'price_max' => $request->price_max,
             'description' => $request->description,
             'features' => $featuresArray,
-            'image_path' => $request->image_url ?: $package->image_path,
+            'image_path' => $imagePath,
         ]);
 
         return redirect()->back()->with('success', 'Pricing package updated successfully.');
