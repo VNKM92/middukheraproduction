@@ -355,15 +355,28 @@ class BookingController extends Controller
             }
 
             // Send Confirmation Custom SMS to Contact Person
-            $phone = $booking->customer_phone;
+            $phone = $booking->customer_phone ?: ($booking->user->phone ?? ($transaction->customer_phone ?? null));
             if ($phone) {
-                SmsManager::sendPaymentSuccessSms($phone, [
+                $smsResult = SmsManager::sendPaymentSuccessSms($phone, [
                     'name' => $booking->user->name ?? 'Valued Client',
                     'amount' => $booking->amount,
                     'booking_id' => $booking->id,
                     'package' => $booking->package->name ?? 'Photoshoot',
+                    'package_name' => $booking->package->name ?? 'Photoshoot',
                     'payment_id' => $paymentId,
                 ]);
+
+                if ($transaction && !empty($smsResult['sent_message'])) {
+                    $raw = is_array($transaction->raw_response) ? $transaction->raw_response : (json_decode($transaction->raw_response, true) ?? []);
+                    $raw['confirmation_sms'] = [
+                        'phone' => $phone,
+                        'message' => $smsResult['sent_message'],
+                        'status' => $smsResult['success'] ? 'sent' : 'failed',
+                        'driver' => $smsResult['driver_used'] ?? null,
+                        'sent_at' => now()->toIso8601String(),
+                    ];
+                    $transaction->update(['raw_response' => $raw]);
+                }
             }
 
             // Send Admin Alert SMS
@@ -429,15 +442,28 @@ class BookingController extends Controller
             );
 
             // Send Confirmation Custom SMS
-            $phone = $booking->customer_phone;
+            $phone = $booking->customer_phone ?: ($booking->user->phone ?? ($transaction->customer_phone ?? null));
             if ($phone) {
-                SmsManager::sendPaymentSuccessSms($phone, [
+                $smsResult = SmsManager::sendPaymentSuccessSms($phone, [
                     'name' => $booking->user->name ?? 'Valued Client',
                     'amount' => $booking->amount,
                     'booking_id' => $booking->id,
                     'package' => $booking->package->name ?? 'Photoshoot',
+                    'package_name' => $booking->package->name ?? 'Photoshoot',
                     'payment_id' => $paymentId,
                 ]);
+
+                if ($transaction && !empty($smsResult['sent_message'])) {
+                    $raw = is_array($transaction->raw_response) ? $transaction->raw_response : (json_decode($transaction->raw_response, true) ?? []);
+                    $raw['confirmation_sms'] = [
+                        'phone' => $phone,
+                        'message' => $smsResult['sent_message'],
+                        'status' => $smsResult['success'] ? 'sent' : 'failed',
+                        'driver' => $smsResult['driver_used'] ?? null,
+                        'sent_at' => now()->toIso8601String(),
+                    ];
+                    $transaction->update(['raw_response' => $raw]);
+                }
             }
 
             // Send Admin Alert SMS
@@ -500,15 +526,28 @@ class BookingController extends Controller
             );
 
             // Send Confirmation Custom SMS
-            $phone = $booking->customer_phone;
+            $phone = $booking->customer_phone ?: ($booking->user->phone ?? ($transaction->customer_phone ?? null));
             if ($phone) {
-                SmsManager::sendPaymentSuccessSms($phone, [
+                $smsResult = SmsManager::sendPaymentSuccessSms($phone, [
                     'name' => $booking->user->name ?? 'Valued Client',
                     'amount' => $booking->amount,
                     'booking_id' => $booking->id,
                     'package' => $booking->package->name ?? 'Photoshoot',
+                    'package_name' => $booking->package->name ?? 'Photoshoot',
                     'payment_id' => $razorpayPaymentId,
                 ]);
+
+                if ($transaction && !empty($smsResult['sent_message'])) {
+                    $raw = is_array($transaction->raw_response) ? $transaction->raw_response : (json_decode($transaction->raw_response, true) ?? []);
+                    $raw['confirmation_sms'] = [
+                        'phone' => $phone,
+                        'message' => $smsResult['sent_message'],
+                        'status' => $smsResult['success'] ? 'sent' : 'failed',
+                        'driver' => $smsResult['driver_used'] ?? null,
+                        'sent_at' => now()->toIso8601String(),
+                    ];
+                    $transaction->update(['raw_response' => $raw]);
+                }
             }
 
             // Send Admin Alert SMS

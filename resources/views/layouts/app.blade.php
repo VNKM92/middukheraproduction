@@ -122,11 +122,11 @@
         <link rel="manifest" href="{{ asset('manifest.json') }}">
         <link rel="manifest" href="{{ asset('build/manifest.json') }}">
 
-         <link rel="preload" as="style" href="{{url('public/build/assets/app-qCqL4GTJ.css')}}" />
+         <link rel="preload" as="style" href="{{url('public/build/assets/app-DPAN28S2.css')}}" />
 
          <link rel="modulepreload" as="script" href="{{url('public/build/assets/app-D-c50wYQ.js')}}" />
          
-         <link rel="stylesheet" href="{{url('public/build/assets/app-qCqL4GTJ.css')}}" />
+         <link rel="stylesheet" href="{{url('public/build/assets/app-DPAN28S2.css')}}" />
          
          <script type="module" src="{{url('public/build/assets/app-D-c50wYQ.js')}}"></script>
 

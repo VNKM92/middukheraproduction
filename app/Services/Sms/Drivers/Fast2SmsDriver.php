@@ -54,21 +54,30 @@ class Fast2SmsDriver implements SmsGatewayInterface
         }
 
         $activeRoute = $extra['route'] ?? $this->route;
+        $otpCode = $extra['otp'] ?? null;
 
         try {
-            $payload = [
-                'route' => $activeRoute,
-                'message' => $message,
-                'language' => 'english',
-                'flash' => 0,
-                'numbers' => $cleanPhone,
-            ];
+            if ($activeRoute === 'otp' && !empty($otpCode)) {
+                $payload = [
+                    'route' => 'otp',
+                    'variables_values' => (string)$otpCode,
+                    'numbers' => $cleanPhone,
+                ];
+            } else {
+                $payload = [
+                    'route' => $activeRoute,
+                    'message' => $message,
+                    'language' => 'english',
+                    'flash' => 0,
+                    'numbers' => $cleanPhone,
+                ];
 
-            if (!empty($this->senderId)) {
-                $payload['sender_id'] = $this->senderId;
-            }
-            if (!empty($this->entityId)) {
-                $payload['entity_id'] = $this->entityId;
+                if (!empty($this->senderId)) {
+                    $payload['sender_id'] = $this->senderId;
+                }
+                if (!empty($this->entityId)) {
+                    $payload['entity_id'] = $this->entityId;
+                }
             }
 
             $response = Http::withHeaders([
@@ -78,6 +87,28 @@ class Fast2SmsDriver implements SmsGatewayInterface
             ])->timeout(15)->post('https://www.fast2sms.com/dev/bulkV2', $payload);
 
             $json = $response->json();
+
+            // If Quick SMS route failed due to spam filter and we have an OTP code, retry via OTP route
+            if (!$response->successful() && !empty($otpCode) && $activeRoute !== 'otp') {
+                $otpPayload = [
+                    'route' => 'otp',
+                    'variables_values' => (string)$otpCode,
+                    'numbers' => $cleanPhone,
+                ];
+                $retryResp = Http::withHeaders([
+                    'authorization' => $this->apiKey,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json',
+                ])->timeout(15)->post('https://www.fast2sms.com/dev/bulkV2', $otpPayload);
+
+                if ($retryResp->successful() && isset($retryResp->json()['return']) && ($retryResp->json()['return'] === true || $retryResp->json()['return'] === 'true')) {
+                    return [
+                        'success' => true,
+                        'message' => 'SMS OTP dispatched successfully via Fast2SMS (OTP Route).',
+                        'response' => $retryResp->json(),
+                    ];
+                }
+            }
 
             // Extract message string safely (Fast2SMS often returns array of messages)
             $responseMsg = '';

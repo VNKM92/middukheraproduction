@@ -1,9 +1,97 @@
-<IfModule mod_rewrite.c>
-    <IfModule mod_negotiation.c>
-        Options -MultiViews -Indexes
-    </IfModule>
+# ==============================================================================
+# Production Security & Performance Configuration (public/.htaccess)
+# ==============================================================================
 
+# 1. Disable Directory Browsing and MultiViews
+<IfModule mod_negotiation.c>
+    Options -Indexes -MultiViews +FollowSymLinks
+</IfModule>
+
+# 2. Block Direct Access to Sensitive Files and Hidden Dotfiles
+<IfModule mod_authz_core.c>
+    <FilesMatch "^\.">
+        Require all denied
+    </FilesMatch>
+
+    <FilesMatch "(?i)\.(sql|bak|backup|log|env|sh|ini|yml|yaml|dist|orig|save|swp|zip|tar|gz)$">
+        Require all denied
+    </FilesMatch>
+</IfModule>
+
+<IfModule !mod_authz_core.c>
+    <FilesMatch "^\.">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+    <FilesMatch "(?i)\.(sql|bak|backup|log|env|sh|ini|yml|yaml|dist|orig|save|swp|zip|tar|gz)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+# 3. Security Headers
+<IfModule mod_headers.c>
+    # Protect against clickjacking
+    Header set X-Frame-Options "SAMEORIGIN"
+
+    # Prevent MIME-sniffing
+    Header set X-Content-Type-Options "nosniff"
+
+    # Enable XSS filtering in browsers
+    Header set X-XSS-Protection "1; mode=block"
+
+    # Referrer Policy
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Feature & Permissions Policy
+    Header set Permissions-Policy "geolocation=(), camera=(), microphone=()"
+
+    # Remove Server and PHP version banners
+    Header unset X-Powered-By
+    Header unset Server
+</IfModule>
+
+# 4. Gzip / Brotli Compression for Performance
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/plain text/html text/xml text/css text/javascript
+    AddOutputFilterByType DEFLATE application/xml application/xhtml+xml application/rss+xml
+    AddOutputFilterByType DEFLATE application/javascript application/x-javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml font/ttf font/otf font/woff font/woff2
+</IfModule>
+
+# 5. Browser Caching for Static Assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresDefault "access plus 1 month"
+
+    # Images
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+
+    # Fonts
+    ExpiresByType font/ttf "access plus 1 year"
+    ExpiresByType font/otf "access plus 1 year"
+    ExpiresByType font/woff "access plus 1 year"
+    ExpiresByType font/woff2 "access plus 1 year"
+
+    # CSS / JavaScript
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+</IfModule>
+
+# 6. Front Controller URL Rewriting
+<IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Block common malicious query string injections (SQLi, XSS, Path Traversal)
+    RewriteCond %{QUERY_STRING} (base64_encode|GLOBALS|_REQUEST|<script|%3Cscript|%00|etc/passwd) [NC,OR]
+    RewriteCond %{QUERY_STRING} (union.*select.*\(|insert.*into.*\(|select.*from) [NC]
+    RewriteRule .* - [F,L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

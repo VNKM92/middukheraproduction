@@ -99,8 +99,8 @@ class AdminDashboardController extends Controller
 
         $result = SmsManager::dispatch(
             phone: $request->test_phone,
-            // message: $request->test_message,
-            message: 'sms_2fa',
+            message: $request->test_message,
+            // message: 'sms_2fa',
             templateKey: 'admin_test',
             overrideDriver: $testDriver
         );

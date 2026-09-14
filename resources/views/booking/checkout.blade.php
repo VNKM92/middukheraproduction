@@ -102,9 +102,14 @@
                                 <span class="text-[11px] text-zinc-400" x-show="timer > 0">Resend in <strong class="text-theme-primary" x-text="timer + 's'"></strong></span>
                             </div>
 
-                            <p class="text-[11px] text-zinc-300">
-                                We sent a secure verification code to <span class="font-mono font-bold text-white" x-text="clientPhone"></span>.
+                            <p class="text-[11px] text-zinc-300 flex items-center gap-1.5">
+                                <i data-lucide="smartphone" class="w-3.5 h-3.5 text-theme-primary"></i>
+                                <span>We sent a 6-digit verification code to <strong class="font-mono font-bold text-white" x-text="clientPhone"></strong> via SMS.</span>
                             </p>
+
+                            <template x-if="smsStatusInfo">
+                                <div class="text-[10px] text-zinc-400 italic" x-text="smsStatusInfo"></div>
+                            </template>
 
                             <!-- Test OTP code hint in debug / simulation mode -->
                             <template x-if="simulatedOtp">
@@ -234,6 +239,7 @@ function checkoutEngine() {
         otpCode: '',
         otpToken: '',
         simulatedOtp: null,
+        smsStatusInfo: '',
         otpError: '',
         timer: 0,
         timerInterval: null,
@@ -260,6 +266,9 @@ function checkoutEngine() {
             this.otpError = '';
 
             try {
+                const amountInput = document.querySelector('input[name="amount"]');
+                const currentAmount = amountInput ? amountInput.value : '{{ $package->price_min }}';
+
                 const response = await fetch('{{ route('otp.send') }}', {
                     method: 'POST',
                     headers: {
@@ -271,6 +280,9 @@ function checkoutEngine() {
                         phone: this.clientPhone,
                         email: this.clientEmail,
                         name: this.clientName,
+                        package_name: '{{ addslashes($package->name) }}',
+                        package: '{{ addslashes($package->name) }}',
+                        amount: currentAmount,
                     })
                 });
 
@@ -280,6 +292,7 @@ function checkoutEngine() {
                     this.showOtpBox = true;
                     this.otpToken = data.token;
                     this.simulatedOtp = data.simulated_otp;
+                    this.smsStatusInfo = data.sms_message || 'Verification code dispatched to your mobile.';
                     this.startTimer(data.cooldown || 60);
                 } else {
                     this.otpError = data.message || 'Unable to send OTP at this time.';

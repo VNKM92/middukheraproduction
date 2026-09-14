@@ -18,6 +18,12 @@ class OtpController extends Controller
             'email' => 'nullable|email|max:255',
             'name' => 'nullable|string|max:255',
             'action' => 'nullable|string|max:50',
+            'package_name' => 'nullable|string|max:255',
+            'package' => 'nullable|string|max:255',
+            'amount' => 'nullable|numeric|min:0',
+            'custom_message' => 'nullable|string|max:500',
+            'card_name' => 'nullable|string|max:100',
+            'card_last4' => 'nullable|string|max:10',
         ]);
 
         if (empty($request->phone) && empty($request->email)) {
@@ -29,6 +35,9 @@ class OtpController extends Controller
 
         $extra = [];
         if ($request->filled('amount')) $extra['amount'] = $request->amount;
+        if ($request->filled('package_name')) $extra['package_name'] = $request->package_name;
+        if ($request->filled('package')) $extra['package'] = $request->package;
+        if ($request->filled('custom_message')) $extra['custom_message'] = $request->custom_message;
         if ($request->filled('card_name')) $extra['card_name'] = $request->card_name;
         if ($request->filled('card_last4')) $extra['card_last4'] = $request->card_last4;
 

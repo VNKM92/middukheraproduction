@@ -45,15 +45,20 @@ class OtpService
         $otpRecord = OtpVerification::generateOtp($phone, $email, $action, 10);
 
         // Dispatch Custom SMS if phone is provided
-        $smsResult = ['success' => true];
+        $smsResult = ['success' => true, 'message' => 'SMS queued.'];
         if ($phone) {
             $smsResult = SmsManager::sendOtpSms($phone, $otpRecord->otp_code, $name, $extra);
         }
+
+        
 
         return [
             'success' => true,
             'message' => 'Verification code sent successfully to ' . ($phone ? 'your phone' : 'your email') . '.',
             'token' => $otpRecord->token,
+            'sms_status' => $smsResult['success'] ?? false,
+            'sms_message' => $smsResult['message'] ?? null,
+            'driver_used' => $smsResult['driver_used'] ?? null,
             'expires_in' => 600, // 10 mins
             'cooldown' => 60,
             // Only expose otp_code in development / simulation mode for ease of automated testing & debugging

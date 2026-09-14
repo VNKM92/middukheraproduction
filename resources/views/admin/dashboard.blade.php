@@ -1685,7 +1685,7 @@
                         <span class="text-xs font-bold text-white flex items-center gap-1.5">
                             <i data-lucide="send" class="w-3.5 h-3.5 text-cyan-400"></i> MSG91 Credentials
                         </span>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="space-y-1">
                                 <label class="text-[11px] text-zinc-400">MSG91 Auth Key</label>
                                 <input type="password" name="msg91_auth_key" value="{{ $allSettings['msg91_auth_key'] ?? '' }}" placeholder="Auth Key" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
@@ -1693,6 +1693,10 @@
                             <div class="space-y-1">
                                 <label class="text-[11px] text-zinc-400">Sender ID (DLT Header)</label>
                                 <input type="text" name="msg91_sender_id" value="{{ $allSettings['msg91_sender_id'] ?? 'MIDDUK' }}" placeholder="e.g. MIDDUK" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[11px] text-zinc-400">MSG91 Flow / DLT Template ID</label>
+                                <input type="text" name="msg91_dlt_template_id" value="{{ $allSettings['msg91_dlt_template_id'] ?? '' }}" placeholder="e.g. 6428f5..." class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
                             </div>
                         </div>
                     </div>
@@ -1710,11 +1714,17 @@
 
                     <!-- Custom Message Templates -->
                     <div class="space-y-4 pt-2 border-t border-white/10">
-                        <span class="text-xs font-bold text-white uppercase tracking-wider block">Customizable SMS Templates</span>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-white uppercase tracking-wider block">Customizable SMS Templates</span>
+                            <span class="text-[10px] text-amber-300/80">Supports tags: {otp}, {name}, {package}, {amount}, {site_name}, {currency}, {merchant}</span>
+                        </div>
                         
                         <div class="space-y-1">
-                            <label class="text-xs font-semibold text-zinc-300">1. OTP Phone Verification SMS Template</label>
-                            <textarea name="sms_template_otp" rows="2" class="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">{{ $allSettings['sms_template_otp'] ?? "Your {site_name} verification code is: {otp}. Valid for 10 minutes. Please do not share this code." }}</textarea>
+                            <label class="text-xs font-semibold text-zinc-300 flex items-center justify-between">
+                                <span>1. OTP Phone Verification SMS Template</span>
+                                <span class="text-[10px] text-zinc-400">Placeholders: <code class="text-theme-primary">{otp}</code>, <code class="text-theme-primary">{package}</code>, <code class="text-theme-primary">{amount}</code>, <code class="text-theme-primary">{name}</code></span>
+                            </label>
+                            <textarea name="sms_template_otp" rows="2" class="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">{{ $allSettings['sms_template_otp'] ?? "Your {site_name} verification code is: {otp} for {package} booking of {currency}{amount}. Valid for 10 minutes. Please do not share this code." }}</textarea>
                         </div>
 
                         <div class="space-y-1">

@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
         // Share site settings globally with all views
         View::composer('*', function ($view) {
             $defaultSettings = [
-                'site_name' => config('app.name', 'Middukhera Production'),
+                'site_name' => config('app.name', 'UKVI'),
                 'site_tagline' => 'Capturing Eternal Elegance & High-Fashion Artistry',
                 'logo_text' => 'MIDDUKHERA',
                 'logo_sub' => 'PRODUCTION',

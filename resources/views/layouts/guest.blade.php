@@ -20,6 +20,14 @@
 
         <link rel="manifest" href="{{url('/public/build/manifest.json')}}" />
 
+         <link rel="preload" as="style" href="{{url('public/build/assets/app-DPAN28S2.css')}}" />
+
+         <link rel="modulepreload" as="script" href="{{url('public/build/assets/app-D-c50wYQ.js')}}" />
+         
+         <link rel="stylesheet" href="{{url('public/build/assets/app-DPAN28S2.css')}}" />
+         
+         <script type="module" src="{{url('public/build/assets/app-D-c50wYQ.js')}}"></script>
+
         <style>
             :root {
                 --theme-primary: {{ $siteSettings['primary_color'] ?? '#E5C158' }};
