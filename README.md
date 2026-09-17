@@ -1,31 +1,35 @@
 # 📸 Middukhera Studio & Productions — Luxury Photoshoot & Production Management Platform
 
-A high-performance, enterprise-grade Photoshoot & Cinematography Studio web application built with **Laravel 12 / PHP 8.4**, **TailwindCSS v4**, **Alpine.js**, **MySQL**, **Razorpay Payment Gateway**, **Multi-Gateway SMS Engine (Twilio + Fast2SMS Dual-Failover)**, **Phone OTP Verification**, **Package & Booking Management**, **Responsive Executive Sidebar Dashboard**, and **Resilient Asynchronous Webhooks**.
+A high-performance, enterprise-grade Photoshoot & Cinematography Studio web application built with **Laravel 12 / PHP 8.4**, **TailwindCSS v4**, **Alpine.js**, **MySQL**, **Cashfree PG v3 Gateway**, **Razorpay Payment Gateway**, **Multi-Gateway Payment Switcher**, **Fast2SMS Quick SMS Pack Engine with Dynamic Message Templates**, **Phone OTP Verification**, **Package & Booking Management**, **Responsive Executive Sidebar Dashboard**, and **Resilient Asynchronous Webhooks**.
 
 ---
 
 ## 📑 Table of Contents
 
 1. [🌟 Architecture & System Workflows](#-architecture--system-workflows)
+   - [High-Level Booking, Payment & SMS Architecture](#1-high-level-booking-payment--sms-architecture)
+   - [Payment Gateway Switcher & Cashfree Flow](#2-payment-gateway-switcher--cashfree-flow)
+   - [Fast2SMS Quick Pack & Custom Template Workflow](#3-fast2sms-quick-pack--custom-template-workflow)
 2. [✨ Key Features & Modules](#-key-features--modules)
-   - [Executive Super Admin Dashboard](#1-executive-super-admin-dashboard)
-   - [Dual-Gateway SMS Engine (Twilio + Fast2SMS Failover)](#2-dual-gateway-sms-engine-twilio--fast2sms)
-   - [Package & Portfolio Management (with Edit/Update)](#3-package--portfolio-management)
-   - [Phone OTP Verification & Security](#4-phone-otp-verification--security)
-   - [Razorpay Payment Gateway & Transaction Tracking](#5-razorpay-payment-gateway--transaction-tracking)
-   - [Asynchronous Webhooks & Reliability](#6-asynchronous-webhooks--reliability)
-   - [Vendor / Photographer Multi-Tenant System](#7-vendor--photographer-multi-tenant-system)
-   - [Dynamic Theme Engine & JSON-LD Structured SEO](#8-dynamic-theme-engine--json-ld-structured-seo)
-3. [📂 Project Structure & Architecture](#-project-structure--architecture)
+   - [Cashfree Payment Gateway Integration (PG API v3)](#1-cashfree-payment-gateway-integration-pg-api-v3)
+   - [Dynamic Payment Gateway Switcher (Cashfree vs Razorpay)](#2-dynamic-payment-gateway-switcher-cashfree-vs-razorpay)
+   - [Fast2SMS Quick Pack & Custom Dynamic Templates](#3-fast2sms-quick-pack--custom-dynamic-templates)
+   - [Executive Super Admin Dashboard](#4-executive-super-admin-dashboard)
+   - [Phone OTP Verification & Security](#5-phone-otp-verification--security)
+   - [Asynchronous Webhook Event Audit Logs](#6-asynchronous-webhook-event-audit-logs)
+   - [Package & Portfolio Management](#7-package--portfolio-management)
+   - [Vendor / Photographer Multi-Tenant System](#8-vendor--photographer-multi-tenant-system)
+   - [Dynamic Theme Engine & JSON-LD Structured SEO](#9-dynamic-theme-engine--json-ld-structured-seo)
+3. [📂 Project Structure & Directory Layout](#-project-structure--directory-layout)
 4. [🛠️ Step-by-Step Installation & Local Setup](#️-step-by-step-installation--local-setup)
-5. [⚙️ Environment Configuration (`.env`)](#️-environment-configuration-env)
+5. [⚙️ Complete Environment Configuration (`.env`)](#️-complete-environment-configuration-env)
 6. [🔑 Default Seed Credentials](#-default-seed-credentials)
-7. [📖 How Everything Works (Operational Guide)](#-how-everything-works-operational-guide)
-   - [How to Test SMS Gateway & Failover](#a-how-to-test-sms-gateway--failover)
-   - [How the Booking & Checkout Flow Works](#b-how-the-booking--checkout-flow-works)
-   - [How to Edit and Create Packages](#c-how-to-edit-and-create-packages)
-   - [How to Customize Studio Branding & Theme Colors](#d-how-to-customize-studio-branding--theme-colors)
-   - [How to Test Razorpay Webhooks Locally](#e-how-to-test-razorpay-webhooks-locally)
+7. [📖 Operational Guides & How-To](#-operational-guides--how-to)
+   - [How to Configure Cashfree in Admin Dashboard](#a-how-to-configure-cashfree-in-admin-dashboard)
+   - [How to Switch Between Cashfree and Razorpay](#b-how-to-switch-between-cashfree-and-razorpay)
+   - [How to Configure Fast2SMS Quick SMS Pack & Templates](#c-how-to-configure-fast2sms-quick-sms-pack--templates)
+   - [How the Booking & Checkout Flow Works](#d-how-the-booking--checkout-flow-works)
+   - [How to Test Cashfree & Razorpay Webhooks](#e-how-to-test-cashfree--razorpay-webhooks)
 8. [🗄️ Database Schema & Data Models](#️-database-schema--data-models)
 9. [🧪 Automated Testing & Verification](#-automated-testing--verification)
 10. [🚀 Deployment & Production Optimizations](#-deployment--production-optimizations)
@@ -35,144 +39,175 @@ A high-performance, enterprise-grade Photoshoot & Cinematography Studio web appl
 
 ## 🌟 Architecture & System Workflows
 
-### 1. High-Level Booking & Payment Architecture
+### 1. High-Level Booking, Payment & SMS Architecture
 
 ```mermaid
 flowchart TD
-    Client([Client / Visitor]) -->|1. Select Package & Date| CheckoutView[Checkout Screen]
-    CheckoutView -->|2. Request OTP AJAX| OtpController[OTP Controller]
-    OtpController -->|3. Generate 6-Digit Code| OtpService[OTP Service]
-    OtpService -->|4. Dispatch SMS| SmsManager[Dual-Gateway SMS Engine]
-    SmsManager -->|5. Try Primary Twilio| TwilioDriver[Twilio Driver]
-    TwilioDriver -.->|Failover on Error| Fast2SmsDriver[Fast2SMS Driver]
-    SmsManager -->|6. Audit Transmission| SmsLogs[(SMS Logs Table)]
-    Client -->|7. Enter & Verify Code| OtpController
-    OtpController -->|8. Issue Verified Token| CheckoutView
-    CheckoutView -->|9. Submit Reservation| BookingController[Booking Controller]
-    BookingController -->|10. Create Order & Token| RzpService[Razorpay Gateway Service]
-    BookingController -->|11. Create Tracking Record| TxnTable[(Transactions Table)]
-    RzpService -->|12. Launch Payment Modal| RazorpayGateway[(Razorpay Payment Gateway)]
-    RazorpayGateway -->|13a. Client Callback| BookingController
-    RazorpayGateway -->|13b. Async Webhook Event| WebhookController[Razorpay Webhook Controller]
-    BookingController -->|14a. Verify Signature & Capture| TxnTable
-    WebhookController -->|14b. Idempotent Handler| WebhookLogs[(Webhook Logs Table)]
-    TxnTable -->|15. Trigger Confirmation SMS| SmsManager
+    Client([Client / Visitor]) -->|1. Select Package & Shoot Date| CheckoutView[Checkout Screen]
+    CheckoutView -->|2. Request Mobile OTP| OtpController[OTP Controller]
+    OtpController -->|3. Fast2SMS Quick SMS OTP| SmsManager[SMS Engine]
+    Client -->|4. Verify 6-Digit Code| OtpController
+    OtpController -->|5. Issue Verified Token| CheckoutView
+    CheckoutView -->|6. Submit Reservation| BookingController[Booking Controller]
+    BookingController -->|7. Resolve Active Gateway| GatewayManager[Payment Gateway Manager]
+    
+    GatewayManager -->|Route A: Active = Cashfree| CashfreeService[Cashfree Service v3]
+    GatewayManager -->|Route B: Active = Razorpay| RazorpayService[Razorpay Service]
+
+    CashfreeService -->|8a. Create Order & Session| CashfreePG[(Cashfree Payment Gateway)]
+    RazorpayService -->|8b. Create Order| RazorpayPG[(Razorpay Payment Gateway)]
+
+    BookingController -->|9. Dispatch Bank OTP / Initiation SMS| SmsManager
+    SmsManager -->|10. Fast2SMS Quick Route 'q'| Fast2SMS[(Fast2SMS API)]
+
+    CashfreePG -->|11a. SDK Return Redirect| CashfreeController[Cashfree Controller]
+    CashfreePG -->|11b. Async Webhook Event| CashfreeWebhook[Cashfree Webhook Controller]
+    RazorpayPG -->|11c. Callback & Webhook| RazorpayWebhook[Razorpay Webhook Controller]
+
+    CashfreeController -->|12. Capture & Verify Status| TxnTable[(Transactions & Bookings DB)]
+    CashfreeWebhook -->|12. Idempotent Capture| TxnTable
+
+    TxnTable -->|13. Dispatch Custom Payment Success SMS| SmsManager
+    SmsManager -->|14. Fast2SMS Quick Pack SMS| Client
 ```
 
 ---
 
-### 2. Dual-Gateway SMS Auto-Failover Sequence
+### 2. Payment Gateway Switcher & Cashfree Flow
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor System as Application / OTP Service
-    participant SMS as SmsManager (auto driver)
-    participant DB as Settings & ENV Config
-    participant TW as Twilio (Primary Gateway)
-    participant F2S as Fast2SMS (Secondary Failover)
+    actor User as Client
+    participant App as Studio Checkout (/package/{slug}/checkout)
+    participant Ctrl as BookingController
+    participant Mgr as PaymentGatewayManager
+    participant CF as CashfreeService (PG API v3)
+    participant SMS as Fast2SMS Engine (route: 'q')
+    participant PG as Cashfree Hosted / Drop-in JS SDK
+    participant DB as MySQL Database
+
+    User->>App: Submits booking reservation with verified phone
+    App->>Ctrl: POST /booking/store
+    Ctrl->>Mgr: getActiveGateway() (Cashfree or Razorpay)
+    Mgr-->>Ctrl: Returns 'cashfree'
+    Ctrl->>CF: createOrder(amount, orderId, customerDetails, meta)
+    CF-->>Ctrl: Returns payment_session_id & order_id
+    Ctrl->>DB: Record Booking & Transaction (status: processing)
+    Ctrl->>SMS: sendPaymentInitiatedSms(phone, {name, amount, booking_id, gateway: 'Cashfree'})
+    SMS-->>User: SMS: "Dear Client, transaction for booking #12 has been initiated via Cashfree..."
+    Ctrl-->>User: Render booking.payment with Cashfree JS SDK v3
+    User->>PG: Cashfree Checkout Modal / UPI QR / Cards / NetBanking
+    PG-->>User: Bank OTP Prompt & Authorization
+    PG->>Ctrl: Redirect GET /cashfree/return?order_id=order_cf_12_XYZ
+    Ctrl->>CF: fetchOrder(order_id) & fetchPayments(order_id)
+    CF-->>Ctrl: Order Status: PAID, cf_payment_id: cf_pay_12345
+    Ctrl->>DB: Update Booking (completed) & Transaction (captured)
+    Ctrl->>SMS: sendPaymentSuccessSms(phone, {name, amount, booking_id, payment_id})
+    SMS-->>User: SMS: "Dear Client, payment of ₹2500 for booking #12 was successful! Txn ID: cf_pay_12345"
+    Ctrl-->>User: Redirect to Client Dashboard with confirmation
+```
+
+---
+
+### 3. Fast2SMS Quick Pack & Custom Template Workflow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Event as Payment Capture / Checkout Event
+    participant Manager as SmsManager
+    participant Template as Dynamic Template Renderer
+    participant Driver as Fast2SmsDriver (Route: 'q')
+    participant Fast2SMS as Fast2SMS Bulk V2 API
     participant Log as SMS Audit Logs (sms_logs)
 
-    System->>SMS: sendSms(phone, message, template)
-    SMS->>DB: Resolve credentials (DB settings -> .env fallback)
-    SMS->>TW: Dispatch SMS (E.164 phone +91...)
-    alt Twilio Succeeds
-        TW-->>SMS: 200 OK (Message SID)
-        SMS->>Log: Log Success (Twilio)
-        SMS-->>System: Return true
-    else Twilio Fails (Trial Account / Error 572002 / Network)
-        TW-->>SMS: Error response
-        SMS->>Log: Log Warning (Twilio failed, switching to Fast2SMS)
-        SMS->>F2S: Dispatch SMS (10-digit Indian phone, dlt/otp/q route)
-        alt Fast2SMS Succeeds
-            F2S-->>SMS: 200 OK (request_id)
-            SMS->>Log: Log Success (Fast2SMS Failover)
-            SMS-->>System: Return true
-        else Fast2SMS Fails
-            F2S-->>SMS: Error response
-            SMS->>Log: Log Failure (Fast2SMS)
-            SMS-->>System: Return false
-        end
-    end
+    Event->>Manager: sendPaymentSuccessSms(phone, data)
+    Manager->>Template: renderTemplateString(template, data)
+    Note over Template: Replaces {name}, {amount}, {booking_id}, {package}, {gateway}, {payment_id}
+    Template-->>Manager: Formatted custom message string
+    Manager->>Driver: send(10-digit phone, message, ['route' => 'q'])
+    Driver->>Fast2SMS: POST https://www.fast2sms.com/dev/bulkV2
+    Fast2SMS-->>Driver: 200 OK {"return": true, "message": ["SMS sent successfully"]}
+    Driver-->>Manager: Success response
+    Manager->>Log: Insert into sms_logs table (recipient, message, driver: fast2sms, status: sent)
 ```
 
 ---
 
 ## ✨ Key Features & Modules
 
-### 1. Executive Super Admin Dashboard
-- **Responsive Sticky Sidebar**: Full-height luxury dark sidebar with smooth slide-over drawer on mobile/tablet (with backdrop blur and tap-to-dismiss) and a desktop Show/Off toggle button.
-- **Section Switching without Reload**: Instant Alpine.js section switching across Overview, Bookings, Transactions, Pricing Packages, Portfolio Gallery, Reviews, Messages, SMS Gateways, Theme Customizer, and Webhooks.
-- **Dedicated Layout Isolation**: Isolated from the public website navbar and footer to prevent overlapping and ensure an executive workspace feel.
-- **Metric Cards & Live Analytics**: Real-time stats for Gross Revenue, Captured Bookings, Transactions, Conversion Rates, and Active Packages.
+### 1. Cashfree Payment Gateway Integration (PG API v3)
+- **Official PG API v3 Support**: Integrates `/pg/orders`, `/pg/orders/{order_id}`, and `/pg/orders/{order_id}/payments`.
+- **Cashfree Web JS SDK v3**: Drop-in checkout modal supporting UPI, Cards, NetBanking, and Wallets.
+- **Dual Environment Modes**: Instant toggle between `SANDBOX` (Test) and `PRODUCTION` (Live) modes.
+- **HMAC-SHA256 Webhook Verification**: Cryptographic validation using `x-webhook-timestamp` and `x-webhook-signature` headers.
+- **Instant Simulation / Sandbox Mode**: Allows end-to-end checkout and verification testing even before merchant credentials are live.
 
-### 2. Dual-Gateway SMS Engine (Twilio + Fast2SMS)
-- **Primary & Secondary Auto-Failover**: Automatically attempts Twilio first and fails over to Fast2SMS if Twilio encounters trial restrictions (e.g. error `572002` unverified recipient number) or API downtime.
-- **Dynamic Configuration Resolution**: Settings saved in the Admin Dashboard database take precedence, falling back to `.env` and `config/services.php`.
-- **Intelligent Phone Normalization**:
-  - `Twilio`: Formats numbers to international **E.164** format (`+919876543210`).
-  - `Fast2SMS`: Normalizes Indian numbers to clean **10-digit** format (`9876543210`).
-- **Pluggable Drivers**:
-  - `auto`: Dual-gateway auto-failover (`Twilio` $\rightarrow$ `Fast2SMS`).
-  - `twilio`: Direct Twilio international messaging.
-  - `fast2sms`: Direct Fast2SMS (supports `q`, `otp`, `v3`, and `dlt` routes).
-  - `msg91`: Enterprise MSG91 Flow API.
-  - `custom`: Generic HTTP GET/POST webhook gateway with `{phone}` and `{message}` placeholders.
-  - `log`: Local development logger writing to `storage/logs/laravel.log`.
-- **SMS Diagnostic Tool**: In-dashboard SMS test console allowing gateway selection, custom recipient, and instant test dispatches with detailed error diagnostics.
-- **Template Customizer with Dynamic Placeholders**:
-  - `{site_name}`: Studio brand name
-  - `{currency}`: Active currency symbol
-  - `{name}`: Client full name
-  - `{amount}`: Formatted transaction amount
-  - `{booking_id}`: Booking ID
-  - `{package}`: Photography package name
-  - `{payment_id}`: Razorpay payment ID
-  - `{otp}`: 6-digit verification code
-  - `{reason}`: Failure reason
-  - `{retry_url}`: Direct checkout retry link
-- **Delivery Audit Trail**: Full transaction logs stored in `sms_logs` table tracking driver used, recipient, message text, status, and raw API response.
+### 2. Dynamic Payment Gateway Switcher (Cashfree vs Razorpay)
+- **Active Gateway Selector**: Choose between **Cashfree Payments** and **Razorpay** in the Admin panel with 1 click.
+- **Independent Enable/Disable Toggles**: Enable or disable gateways individually.
+- **Seamless Model Polymorphism**: `bookings`, `transactions`, and `payments` tables dynamically track `gateway`, `cashfree_order_id`, `cashfree_payment_id`, `razorpay_order_id`, and `payment_session_id`.
 
-### 3. Package & Portfolio Management
-- **Package Edit & Update Modal**: Edit package name, minimum and maximum price, description, feature checklists, and upload new cover images or specify image URLs.
-- **Multi-Format Image Handling**: Supports direct file uploads stored in `public/storage/packages` as well as external CDN image URLs.
-- **Tier Deliverables**: Dynamic JSON feature arrays displayed as checklist badges on checkout and booking cards.
-- **Gallery Showcase**: Categorized portfolio items (`Wedding`, `Portrait`, `Fashion`, `Editorial`, `Event`, `Product`) with direct image uploads.
+### 3. Fast2SMS Quick Pack & Custom Dynamic Templates
+- **Fast2SMS Quick SMS Route (`q`)**: Optimized for instant delivery across Indian telecom operators.
+- **Automatic Phone Number Sanitization**: Automatically normalizes phone numbers (`+91`, `91`, leading zeros) to valid 10-digit Indian mobile numbers.
+- **Transaction Initiation & Bank OTP Notice SMS**: Notifies customer when checkout begins to watch for bank OTP.
+- **Payment Success SMS**: Dispatches a custom confirmation message immediately upon payment capture.
+- **Dynamic Placeholders**:
+  - `{name}`: Client Full Name
+  - `{amount}`: Booking / Transaction Amount
+  - `{currency}`: Currency Symbol (e.g. ₹ / Rs.)
+  - `{booking_id}`: Booking Number
+  - `{package}`: Photography Package Name
+  - `{gateway}`: Gateway Used (Cashfree / Razorpay)
+  - `{payment_id}`: Transaction ID / Payment ID
+  - `{site_name}`: Studio Brand Name
+  - `{datetime}`: Timestamp
+  - `{otp}`: 6-digit Verification Code
+  - `{retry_url}`: Payment Retry URL
+- **Live Test SMS Tool**: Admin diagnostic console to test Fast2SMS delivery instantly.
+- **SMS Audit Trail**: Complete database logging in `sms_logs` table with status, driver, and payload.
 
-### 4. Phone OTP Verification & Security
-- **Cryptographic 6-Digit Codes**: Generated securely with a 10-minute expiry window.
-- **Brute-Force & Rate-Limit Protection**: Enforces a maximum of 5 verification attempts per OTP and a 60-second cooldown timer between resend requests.
-- **Inline AJAX Verification Box**: Real-time countdown timer, seamless token generation (`otp_token`), and instant validation before payment initiation.
+### 4. Executive Super Admin Dashboard
+- **Responsive Sticky Sidebar**: Full-height luxury dark sidebar with slide-over drawer on mobile and collapsible desktop toggle.
+- **Isolated Dedicated Layout**: Clean workspace isolated from the public navigation and footer.
+- **Dedicated Admin Sections**:
+  - **Payment Gateways (`#gateways`)**: Active gateway selector, Cashfree PG keys, Razorpay keys, and webhook URLs.
+  - **Fast2SMS & Templates (`#sms_settings`)**: Fast2SMS API key, Route 'q', template editors, and test dispatcher.
+  - **Inbound Webhook Logs (`#webhooks`)**: Real-time event log viewer with JSON payload inspector.
+  - **Bookings & Transactions (`#bookings`, `#transactions`)**: Real-time tracking and status management.
+  - **Pricing Packages & Portfolio (`#packages`, `#gallery`)**: Live package and photo showcase CRUD.
+  - **Theme & Colors (`#theme_settings`)**: Live palette customizer with 6 luxury presets.
 
-### 5. Razorpay Payment Gateway & Transaction Tracking
-- **Complete Transaction State Machine**: Tracks states: `initiated`, `pending_otp`, `otp_verified`, `processing`, `captured`, `failed`, `refunded`.
-- **Dual Checkout Modes**:
-  - **Live / Test Gateway Mode**: Interactive Razorpay popup with pre-filled customer details and SHA256 signature verification.
-  - **1-Click Sandbox Simulation Mode**: Enables instant development and presentation testing without live API keys.
-- **Transaction Inspector**: Admin modal with raw gateway JSON payload viewer, status filtering, and search by reference ID (`TRX-XXXXX`).
-- **Client Receipt Generation**: Client portal displays live transaction reference codes, payment IDs, status badges, and printable receipts.
+### 5. Phone OTP Verification & Security
+- **Cryptographic 6-Digit Codes**: 10-minute validity with secure hashing.
+- **Brute-Force & Rate Limiting**: Max 5 attempts per token, 60-second cooldown timer.
+- **Inline AJAX Verification Box**: Countdown timer, simulation auto-fill in development, and token issuance.
 
-### 6. Asynchronous Webhooks & Reliability
-- **Dedicated Webhook Routes**: `POST /razorpay/webhook` and `POST /webhooks/razorpay` (CSRF-exempt).
-- **HMAC SHA256 Signature Verification**: Validates all incoming payloads against `RAZORPAY_WEBHOOK_SECRET`.
-- **Idempotency & Replay Protection**: Eliminates duplicate charges or double updates if Razorpay re-sends events.
-- **Handled Events**: `payment.captured`, `order.paid`, `payment.failed`, `payment.authorized`, `refund.created`, `refund.processed`.
-- **Admin Webhook Stream**: Real-time event log viewer with JSON payload inspector and 1-click webhook URL copy button.
+### 6. Asynchronous Webhook Event Audit Logs
+- **Dedicated Webhook Endpoints**:
+  - Cashfree: `POST /cashfree/webhook`
+  - Razorpay: `POST /razorpay/webhook`
+- **Idempotency & Replay Protection**: Eliminates duplicate charges or redundant updates.
+- **Payload Inspector Modal**: View raw JSON payloads received from payment gateway webhooks.
 
-### 7. Vendor / Photographer Multi-Tenant System
-- **Vendor Registration Flow**: Photographers and studio partners can register via `/vendor/register`.
-- **Vendor Portal**: Dedicated dashboard at `/vendor/dashboard` for managing custom packages, viewing assigned booking sessions, and tracking client sessions.
-- **Admin Moderation**: Super Admin can approve, suspend, or reject vendor applications.
+### 7. Package & Portfolio Management
+- **Package Editor**: Create and update package pricing tiers, deliverables checklist, descriptions, and cover photos.
+- **Gallery Showcase**: Categorized portfolio items with direct image uploads.
 
-### 8. Dynamic Theme Engine & JSON-LD Structured SEO
-- **Live Color & Visual Customizer**: Real-time palette customizer with dark/light background canvas controls (`bg_color`, `card_bg_color`, `primary_color`, `secondary_color`, `accent_color`).
+### 8. Vendor / Photographer Multi-Tenant System
+- **Vendor Signup & Portal**: Photographers can register at `/vendor/register` and manage custom packages at `/vendor/dashboard`.
+- **Super Admin Moderation**: Review, approve, or suspend vendor accounts.
+
+### 9. Dynamic Theme Engine & JSON-LD Structured SEO
+- **Live Visual Customizer**: Real-time color palette customizer with instant preview.
 - **6 One-Click Presets**: *Luxury Gold*, *Obsidian Neon*, *Royal Emerald*, *Rose Champagne*, *Cyberpunk Violet*, and *Clean Light*.
-- **Structured Schema Markup**: Automated JSON-LD structured data for `PhotographyStudio`, `LocalBusiness`, and `BreadcrumbList`.
-- **Dynamic XML Sitemap & Robots**: Live sitemap generated at `/sitemap.xml` and automated `/robots.txt`.
+- **Structured Schema & Sitemap**: Automated JSON-LD for `PhotographyStudio` and dynamic `/sitemap.xml`.
 
 ---
 
-## 📂 Project Structure & Architecture
+## 📂 Project Structure & Directory Layout
 
 ```
 Studio/
@@ -180,29 +215,30 @@ Studio/
 │   ├── Http/
 │   │   ├── Controllers/
 │   │   │   ├── AdminDashboardController.php     # Admin metrics, settings, packages, SMS tests, theme presets
-│   │   │   ├── BookingController.php            # Checkout, Razorpay order creation, payment verification
+│   │   │   ├── BookingController.php            # Checkout, Cashfree & Razorpay order initiation
+│   │   │   ├── CashfreeController.php           # Cashfree return redirect & client verification API
+│   │   │   ├── CashfreeWebhookController.php    # Cashfree inbound webhook handler (HMAC verified)
 │   │   │   ├── ClientDashboardController.php    # Client booking history & printable receipts
 │   │   │   ├── FrontendController.php           # Public homepage, gallery, blogs, contact, policies
 │   │   │   ├── OtpController.php                # AJAX OTP send, verify, and resend endpoints
-│   │   │   ├── RazorpayWebhookController.php    # Inbound HMAC-verified webhook handler
+│   │   │   ├── RazorpayWebhookController.php    # Razorpay HMAC-verified webhook handler
 │   │   │   ├── SitemapController.php            # Dynamic XML sitemap generator
 │   │   │   ├── VendorDashboardController.php    # Vendor analytics & session manager
 │   │   │   ├── VendorPackageController.php      # Vendor custom package CRUD
 │   │   │   └── VendorRegistrationController.php # Vendor signup and onboard flow
 │   │   └── Middleware/
-│   │       ├── EnsureAdmin.php                  # Super Admin role authorization gate
-│   │       └── VerifyCsrfToken.php              # Webhook route CSRF exemption
+│   │       └── EnsureAdmin.php                  # Super Admin role authorization gate
 │   ├── Models/
 │   │   ├── Blog.php                             # Masterclass editorial articles
-│   │   ├── Booking.php                          # Photoshoot appointments & workflow state
+│   │   ├── Booking.php                          # Photoshoot appointments, gateway refs, workflow state
 │   │   ├── ContactMessage.php                   # Public inquiries
 │   │   ├── Gallery.php                          # Portfolio images & category tags
 │   │   ├── OtpVerification.php                  # 6-digit phone verification tokens
 │   │   ├── Package.php                          # Photography packages & pricing
-│   │   ├── Payment.php                          # Legacy payment records
+│   │   ├── Payment.php                          # Multi-gateway payment records
 │   │   ├── Setting.php                          # Key-value dynamic system configuration
 │   │   ├── SmsLog.php                           # Delivery audit trail for SMS dispatches
-│   │   ├── Transaction.php                      # Full payment lifecycle & Razorpay metadata
+│   │   ├── Transaction.php                      # Full payment lifecycle, Cashfree & Razorpay metadata
 │   │   ├── User.php                             # User accounts (super_admin, vendor, client)
 │   │   ├── Vendor.php                           # Photographer partner profile
 │   │   ├── Visitor.php                          # Analytics visitor tracker
@@ -211,21 +247,25 @@ Studio/
 │       ├── Otp/
 │       │   └── OtpService.php                   # OTP generation, verification, and rate limiting
 │       ├── Payment/
+│       │   ├── CashfreeService.php              # Cashfree PG API v3 client, orders, webhook validation
+│       │   ├── PaymentGatewayManager.php        # Dynamic gateway resolver (Cashfree vs Razorpay)
 │       │   └── RazorpayService.php              # Razorpay API client, orders, signature verification
 │       └── Sms/
 │           ├── Contracts/
 │           │   └── SmsGatewayInterface.php      # Driver interface contract
 │           ├── Drivers/
-│           │   ├── AutoFailoverDriver.php       # Primary (Twilio) -> Secondary (Fast2SMS) failover
+│           │   ├── AutoFailoverDriver.php       # Multi-gateway failover driver
 │           │   ├── CustomHttpDriver.php         # Generic HTTP webhook driver
-│           │   ├── Fast2SmsDriver.php           # Fast2SMS gateway driver (India 10-digit)
+│           │   ├── Fast2SmsDriver.php           # Fast2SMS Quick pack driver (Route: 'q', 10-digit Indian)
 │           │   ├── LogDriver.php                # Local file logger driver
 │           │   ├── Msg91Driver.php              # MSG91 Flow API driver
-│           │   └── TwilioDriver.php             # Twilio SMS gateway driver (E.164)
-│           └── SmsManager.php                   # Factory & dynamic config resolution engine
+│           │   └── TwilioDriver.php             # Twilio SMS gateway driver
+│           └── SmsManager.php                   # SMS dispatcher & dynamic template rendering engine
+├── bootstrap/
+│   └── app.php                                  # Application config, routing, CSRF exemptions
 ├── config/
 │   ├── database.php                             # Database connections
-│   ├── services.php                             # Service credentials (Razorpay, Twilio, Fast2SMS, MSG91)
+│   ├── services.php                             # Service credentials (Cashfree, Razorpay, Fast2SMS, Twilio)
 │   └── sms.php                                  # Default SMS drivers & templates
 ├── database/
 │   ├── migrations/
@@ -233,17 +273,19 @@ Studio/
 │   │   ├── 2026_08_11_000000_create_photoshoot_studio_tables.php
 │   │   ├── 2026_08_11_100000_create_vendors_and_update_packages.php
 │   │   ├── 2026_08_14_190241_create_settings_table.php
-│   │   └── 2026_08_21_000000_create_transactions_otp_sms_webhook_tables.php
+│   │   ├── 2026_08_21_000000_create_transactions_otp_sms_webhook_tables.php
+│   │   └── 2026_09_15_000000_add_cashfree_and_gateway_columns.php
 │   └── seeders/
-│       └── DatabaseSeeder.php                   # Complete default settings, packages, blogs, users
+│       └── DatabaseSeeder.php                   # Default settings, packages, blogs, users
 ├── resources/
 │   ├── css/
 │   │   └── app.css                              # TailwindCSS v4 theme variables
 │   └── views/
 │       ├── admin/
-│       │   └── dashboard.blade.php              # Executive responsive sidebar admin dashboard
+│       │   └── dashboard.blade.php              # Executive admin dashboard with Gateways & Fast2SMS tabs
 │       ├── booking/
-│       │   └── checkout.blade.php               # Luxury checkout screen with OTP & Razorpay
+│       │   ├── checkout.blade.php               # Luxury checkout screen with OTP verification
+│       │   └── payment.blade.php                # Multi-gateway payment view (Cashfree SDK v3 / Razorpay)
 │       ├── client/
 │       │   └── dashboard.blade.php              # Client reservations & transaction receipts
 │       ├── frontend/
@@ -261,12 +303,12 @@ Studio/
 │           └── dashboard.blade.php              # Vendor dashboard
 ├── routes/
 │   ├── auth.php                                 # Authentication routes (Breeze)
-│   └── web.php                                  # Main web & API routes
+│   └── web.php                                  # Main web, API, Cashfree, and Webhook routes
 └── tests/
     └── Feature/
         ├── Auth/                                # User authentication tests
         ├── PackageManagementTest.php            # Package CRUD & update tests
-        └── SmsGatewayTest.php                   # Twilio, Fast2SMS, Auto-failover & template tests
+        └── SmsGatewayTest.php                   # SMS gateway & template tests
 ```
 
 ---
@@ -274,16 +316,14 @@ Studio/
 ## 🛠️ Step-by-Step Installation & Local Setup
 
 ### Prerequisites
-Ensure your local environment meets the following requirements:
-- **PHP**: `^8.2` or `^8.4` (with `pdo_mysql`, `curl`, `mbstring`, `openssl`, `fileinfo` extensions enabled)
+- **PHP**: `^8.2` or `^8.4` (with `pdo_mysql`, `curl`, `mbstring`, `openssl`, `fileinfo` enabled)
 - **Composer**: `^2.x`
 - **Node.js**: `^18.x` or `^20.x` & **NPM**
 - **MySQL / MariaDB**: `^8.0` / `^10.4` (e.g. via XAMPP)
-- **Web Server**: Apache / Nginx or Laravel built-in CLI server
 
 ---
 
-### Step 1: Open Project Directory
+### Step 1: Clone or Open Project Directory
 ```bash
 cd c:\xampp\htdocs\vk\Studio
 ```
@@ -301,17 +341,12 @@ npm run build
 *(For active local development with hot reload, run `npm run dev` in a separate terminal).*
 
 ### Step 4: Configure Environment File
-Copy `.env.example` to `.env` if it doesn't already exist:
 ```bash
 cp .env.example .env
-```
-Generate an application encryption key:
-```bash
 php artisan key:generate
 ```
 
-### Step 5: Configure Database & API Credentials
-Open `.env` and configure your MySQL database connection:
+### Step 5: Configure Database Connection in `.env`
 ```env
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -321,14 +356,12 @@ DB_USERNAME=root
 DB_PASSWORD=
 ```
 
-### Step 6: Run Database Migrations & Seeds
-Run the database migrations and seed the database with packages, blogs, settings, and default user accounts:
+### Step 6: Run Database Migrations & Seed Data
 ```bash
 php artisan migrate --seed
 ```
 
 ### Step 7: Create Public Storage Symlink
-Link the `storage/app/public` directory to `public/storage` so package uploads and gallery images are web-accessible:
 ```bash
 php artisan storage:link
 ```
@@ -337,16 +370,11 @@ php artisan storage:link
 ```bash
 php artisan serve
 ```
-Open your browser and navigate to:
-```
-http://127.0.0.1:8000
-```
+Open your browser and visit: `http://127.0.0.1:8000`
 
 ---
 
-## ⚙️ Environment Configuration (`.env`)
-
-Below is the complete reference of environment variables used by the system:
+## ⚙️ Complete Environment Configuration (`.env`)
 
 ```env
 # ==============================================================================
@@ -370,275 +398,217 @@ DB_USERNAME=root
 DB_PASSWORD=
 
 # ==============================================================================
+# ACTIVE PAYMENT GATEWAY SELECTOR
+# Options: cashfree | razorpay
+# ==============================================================================
+ACTIVE_PAYMENT_GATEWAY=cashfree
+
+# ==============================================================================
+# CASHFREE PAYMENT GATEWAY (PG API v3)
+# ==============================================================================
+CASHFREE_ENABLED=1
+CASHFREE_ENVIRONMENT=SANDBOX              # Options: SANDBOX | PRODUCTION
+CASHFREE_APP_ID=TEST_SAMPLE_APP_ID        # From Cashfree Merchant Dashboard
+CASHFREE_SECRET_KEY=your_cashfree_secret  # From Cashfree Merchant Dashboard
+CASHFREE_WEBHOOK_SECRET=your_wh_secret    # From Cashfree Webhooks Dashboard
+CASHFREE_API_VERSION=2023-08-01
+CASHFREE_SIMULATION_MODE=1                # Set 0 for live Cashfree SDK / 1 for instant sandbox test
+
+# ==============================================================================
 # RAZORPAY PAYMENT GATEWAY
 # ==============================================================================
-# In simulation mode (1), test payments succeed instantly without calling live APIs
+RAZORPAY_ENABLED=1
 RAZORPAY_SIMULATION_MODE=1
 RAZORPAY_KEY_ID=rzp_test_sample
 RAZORPAY_KEY_SECRET=your_razorpay_secret
 RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
 
 # ==============================================================================
-# SMS MULTI-GATEWAY CONFIGURATION
-# Options: auto (Twilio -> Fast2SMS), twilio, fast2sms, msg91, custom, log
+# FAST2SMS QUICK SMS PACK & SMS GATEWAY
+# Options: fast2sms | auto | twilio | msg91 | custom_http | simulation
 # ==============================================================================
-SMS_DRIVER=auto
+SMS_ENABLED=1
+SMS_DRIVER=fast2sms
 
-# Gateway 1: Twilio (Primary Gateway)
-TWILIO_SID=ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-TWILIO_AUTH_TOKEN=your_twilio_auth_token
-TWILIO_FROM=+1234567890
-
-# Gateway 2: Fast2SMS (Secondary Failover Gateway for India)
-FAST2SMS_API_KEY=your_fast2sms_api_key
-FAST2SMS_ROUTE=q
+# Gateway: Fast2SMS (Quick SMS Pack for India)
+FAST2SMS_API_KEY=your_fast2sms_api_key    # From fast2sms.com
+FAST2SMS_ROUTE=q                          # Route 'q' (Quick SMS)
 FAST2SMS_SENDER_ID=FSTSMS
 FAST2SMS_ENTITY_ID=
 
-# Gateway 3: MSG91 (Optional Flow Gateway)
-MSG91_AUTH_KEY=
-MSG91_FLOW_ID=
-MSG91_SENDER_ID=
+# Gateway: Twilio (Optional International Gateway)
+TWILIO_ACCOUNT_SID=ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_FROM_NUMBER=+1234567890
 
-# Gateway 4: Custom HTTP Gateway (Optional)
-SMS_CUSTOM_HTTP_URL="https://api.custom-sms.com/send?to={phone}&msg={message}"
-SMS_CUSTOM_HTTP_METHOD=GET
+# Gateway: MSG91 (Optional Enterprise Gateway)
+MSG91_AUTH_KEY=
+MSG91_SENDER_ID=MIDDUK
+MSG91_DLT_TEMPLATE_ID=
 ```
 
 ---
 
 ## 🔑 Default Seed Credentials
 
-After running `php artisan migrate --seed`, use the following pre-configured user accounts:
-
-| Role | Email | Password | Default Dashboard URL | Permissions & Capabilities |
-|---|---|---|---|---|
-| **Super Admin** | `admin@studio.test` | `password` | `/admin/dashboard` | Full system control, SMS testing, Package editing, Theme styling, Webhooks, Transactions |
-| **Vendor / Photographer** | `vendor@studio.test` | `password` | `/vendor/dashboard` | Manage custom packages, view assigned shoot sessions |
-| **Client / Customer** | `client@studio.test` | `password` | `/client/dashboard` | View booking reservations, download receipts, track payments |
+| Role | Email Address | Default Password | Dashboard URL |
+| :--- | :--- | :--- | :--- |
+| **Super Admin** | `admin@middukhera.com` | `password` | `/admin/dashboard` |
+| **Photographer Vendor** | `vendor@middukhera.com` | `password` | `/vendor/dashboard` |
+| **Client / Customer** | `client@middukhera.com` | `password` | `/client/dashboard` |
 
 ---
 
-## 📖 How Everything Works (Operational Guide)
+## 📖 Operational Guides & How-To
 
-### A. How to Test SMS Gateway & Failover
-1. Log in to the **Admin Dashboard** (`/admin/dashboard`) as `admin@studio.test`.
-2. Click on the **SMS Gateway** menu item on the left sidebar.
-3. In the **Gateway Provider Configuration** panel, select:
-   - **`Automatic Failover (Twilio -> Fast2SMS)`** to test the dual-gateway pipeline.
-   - Or select **`Twilio`** or **`Fast2SMS`** directly to test an isolated provider.
-4. Enter your credentials in the input fields (or leave them to use values from `.env`).
-5. In the **"Send Test SMS"** card:
-   - Enter your mobile number (e.g. `9876543210` or `+919876543210`).
-   - Select the test gateway (`auto`, `twilio`, `fast2sms`).
-   - Enter your test message text and click **Dispatch Test Message**.
-6. The system displays a live status badge:
-   - If Twilio succeeds, it confirms delivery with Twilio SID.
-   - If Twilio encounters trial restrictions (Error 572002), the system automatically attempts Fast2SMS and displays: *"Primary gateway (twilio) failed. Auto-failover to fast2sms succeeded."*
-7. Inspect the **SMS Transmission Audit Logs** table at the bottom of the page to review the full payload history.
+### a. How to Configure Cashfree in Admin Dashboard
+1. Log in to `/admin/dashboard` as Super Admin.
+2. In the sidebar, click on **Payment Gateways**.
+3. Under **Active Payment Gateway Selector**, choose **Cashfree Payments**.
+4. In the **Cashfree PG v3 Configuration** card:
+   - Toggle **Enable Cashfree** to `Enabled`.
+   - Set Environment Mode to `SANDBOX` (for testing) or `PRODUCTION` (for live).
+   - Enter your **Cashfree App ID** and **Cashfree Secret Key**.
+   - Set **Instant Simulation Mode** to `Disabled` when testing with real Cashfree test cards/UPI, or `Active` for instant mock tests.
+5. Copy the **Cashfree Webhook URL** (`https://yourdomain.com/cashfree/webhook`) and paste it into your [Cashfree Merchant Dashboard](https://merchant.cashfree.com) under **Developers &rarr; Webhooks**.
+6. Click **Save Payment Gateway Configurations**.
 
 ---
 
-### B. How the Booking & Checkout Flow Works
-1. Navigate to the public homepage (`/`) and click on any package (e.g., **Signature Portraiture**).
-2. Click **Reserve Package & Proceed to Checkout**.
-3. On the checkout screen:
-   - Select your preferred shoot date and time slot.
-   - Enter your Full Name, Email, and Mobile Phone Number.
-4. Click **"Send Verification OTP"**:
-   - The system triggers an AJAX request to `/otp/send`.
-   - A 6-digit verification code is dispatched to the user's phone via the active SMS engine.
-   - *(In development / simulation mode, the OTP code is auto-filled for instant testing).*
-5. Enter the 6-digit OTP code and click **Verify Code**.
-6. Once verified, the **"Proceed to Secure Payment"** button is unlocked.
-7. Click the payment button:
-   - A Razorpay payment modal opens with pre-filled amount and client info.
-   - Complete the payment (or use Sandbox 1-Click Simulation).
-8. The client is redirected to the confirmation screen with a unique tracking reference (e.g. `TRX-94DF8E2A`) and a confirmation SMS is automatically dispatched.
+### b. How to Switch Between Cashfree and Razorpay
+- In `/admin/dashboard` &rarr; **Payment Gateways**:
+  - Click the **Cashfree Payments** card to use Cashfree PG.
+  - Or click the **Razorpay Secure Gateway** card to switch to Razorpay.
+- Click **Save Payment Gateway Configurations**.
+- The checkout screen will instantly adapt to the selected active gateway.
 
 ---
 
-### C. How to Edit and Create Packages
-1. Open the Admin Dashboard sidebar and click **Pricing Packages**.
-2. To edit an existing package:
-   - Click the **Edit Package** button on any package card.
-   - The **"Edit Package"** modal appears.
-   - Modify the Name, Minimum Price, Maximum Price, or Description.
-   - Enter comma-separated features (e.g. `90-min shoot, 20 Edited Photos, Hair Stylist`).
-   - Upload a new cover image from your computer or provide an image URL.
-   - Click **Save Package Changes**.
-3. To create a new package:
-   - Use the **"Create Signature Package"** form at the top of the section.
-   - Fill in details, upload an image, and click **Publish Package**.
+### c. How to Configure Fast2SMS Quick SMS Pack & Templates
+1. In `/admin/dashboard`, navigate to **Fast2SMS & Templates**.
+2. Select Active Driver: **⭐ Fast2SMS (Quick SMS Pack)**.
+3. Enter your **Fast2SMS Authorization API Key** from [fast2sms.com](https://www.fast2sms.com).
+4. Set SMS Route to **Quick SMS (q)**.
+5. Customize your message templates:
+   - **Payment Initiated / Bank OTP Notice SMS Template**:
+     ```
+     Dear {name}, transaction of {currency}{amount} for booking #{booking_id} ({package}) has been initiated via {gateway}. Please enter the OTP sent by your bank to authorize the payment. - {site_name}
+     ```
+   - **Payment Success SMS Template**:
+     ```
+     Dear {name}, payment of {currency}{amount} for booking #{booking_id} ({package}) was successful! Txn ID: {payment_id} via {gateway}. Thank you - {site_name}.
+     ```
+6. Enter an **Admin Notification Mobile Number** to receive alerts on new bookings.
+7. Use the **Send Test SMS** box to test sending an SMS to your 10-digit Indian mobile number.
+8. Click **Save Fast2SMS Settings & Message Templates**.
 
 ---
 
-### D. How to Customize Studio Branding & Theme Colors
-1. Open the Admin Dashboard sidebar and click **Theme Customizer**.
-2. **Apply 1-Click Presets**:
-   - Select from *Luxury Gold*, *Obsidian Neon*, *Royal Emerald*, *Rose Champagne*, *Cyberpunk Violet*, or *Clean Light*.
-3. **Manual Customization**:
-   - Adjust the **Canvas Background Color** (`bg_color`), **Card Background** (`card_bg_color`), **Primary Gold Accent**, and **Secondary Accent**.
-   - Edit Studio Brand Name, Tagline, Phone, Email, and Social Media links.
-4. Click **Save System Configurations**. The entire website updates in real-time across all public and client views.
+### d. How the Booking & Checkout Flow Works
+1. Client browses packages on `/` and clicks **Reserve Session**.
+2. On `/package/{slug}/checkout`:
+   - Client enters mobile number and clicks **Verify via OTP**.
+   - Fast2SMS dispatches a 6-digit verification code.
+   - Client verifies OTP.
+3. Client selects shoot date and clicks **Proceed to Gateway**.
+4. System initiates payment on Cashfree (or Razorpay) and sends a **Transaction Initiation SMS** to the client.
+5. On the payment page:
+   - Cashfree Web JS SDK v3 opens the secure payment modal.
+   - Client completes payment via UPI, Debit/Credit Card, or NetBanking.
+6. Upon payment confirmation:
+   - Client is redirected to `/cashfree/return`.
+   - Booking is marked `completed`, Transaction is marked `captured`.
+   - Fast2SMS immediately sends the **Payment Success Confirmation SMS**.
+   - Admin receives an SMS alert.
 
 ---
 
-### E. How to Test Razorpay Webhooks Locally
-1. Start local tunnel with ngrok (or similar):
+### e. How to Test Cashfree & Razorpay Webhooks
+1. In development, use a webhook forwarding tool like [ngrok](https://ngrok.com) or [localtunnel](https://localtunnel.me):
    ```bash
    ngrok http 8000
    ```
-2. In your **Razorpay Dashboard** $\rightarrow$ **Settings** $\rightarrow$ **Webhooks**:
-   - Webhook URL: `https://your-ngrok-subdomain.ngrok-free.app/razorpay/webhook`
-   - Secret: Enter your `RAZORPAY_WEBHOOK_SECRET`
-   - Active Events: `payment.captured`, `payment.failed`, `order.paid`, `refund.created`
-3. In the Admin Dashboard under **Razorpay Webhooks**, monitor incoming webhook events in real-time with full JSON payload inspection.
+2. Set your Cashfree webhook URL in Cashfree dashboard to:
+   ```
+   https://your-subdomain.ngrok-free.app/cashfree/webhook
+   ```
+3. When Cashfree triggers events (`PAYMENT_SUCCESS_WEBHOOK`, `ORDER_PAID_SUCCESS`), view them in real time in Admin Dashboard &rarr; **Webhook Event Logs** (`#webhooks`).
 
 ---
 
 ## 🗄️ Database Schema & Data Models
 
-| Table Name | Primary Responsibilities | Key Columns |
-|---|---|---|
-| `users` | User authentication & role management | `id`, `name`, `email`, `role` (`super_admin`, `vendor`, `client`), `password`, `created_at` |
-| `packages` | Photoshoot tiers & pricing deliverables | `id`, `vendor_id`, `name`, `slug`, `price_min`, `price_max`, `description`, `features` (JSON), `image_path` |
-| `bookings` | Customer session appointments | `id`, `user_id`, `package_id`, `vendor_id`, `booking_date`, `time_slot`, `status`, `total_amount`, `notes` |
-| `transactions` | Complete payment tracking & Razorpay audit | `id`, `transaction_ref`, `booking_id`, `user_id`, `amount`, `status`, `payment_method`, `razorpay_order_id`, `razorpay_payment_id`, `razorpay_signature`, `raw_response` (JSON) |
-| `otp_verifications` | 6-digit phone verification records | `id`, `phone`, `email`, `otp_code`, `token`, `status`, `attempts`, `expires_at`, `verified_at` |
-| `sms_logs` | Outbound SMS transmission audit trail | `id`, `recipient`, `message`, `driver`, `template_key`, `status`, `response_payload` (JSON), `created_at` |
-| `webhook_logs` | Inbound Razorpay webhook stream | `id`, `event_id`, `event_type`, `signature`, `is_valid_signature`, `processed`, `payload` (JSON) |
-| `settings` | Dynamic system settings & theme values | `id`, `key`, `value`, `created_at`, `updated_at` |
-| `galleries` | Portfolio imagery & category tags | `id`, `title`, `category`, `image_path`, `created_at` |
-| `blogs` | Editorial masterclasses & SEO articles | `id`, `title`, `slug`, `excerpt`, `content`, `image_path`, `meta_title`, `meta_description` |
-| `vendors` | Photographer partners & studio profiles | `id`, `user_id`, `name`, `slug`, `description`, `status` (`pending`, `approved`, `rejected`) |
-| `contact_messages` | Public contact & inquiry submissions | `id`, `name`, `email`, `phone`, `subject`, `message`, `is_read` |
+| Table | Purpose | Key Columns |
+| :--- | :--- | :--- |
+| `users` | User accounts & roles | `id`, `name`, `email`, `phone`, `role` (`admin`, `vendor`, `client`), `password` |
+| `packages` | Studio photoshoot tiers | `id`, `name`, `slug`, `price_min`, `price_max`, `description`, `features` (JSON), `image_path` |
+| `bookings` | Client appointments | `id`, `user_id`, `package_id`, `booking_date`, `status`, `payment_status`, `amount`, `customer_phone`, `payment_gateway`, `cashfree_order_id`, `cashfree_payment_id`, `razorpay_order_id`, `razorpay_payment_id` |
+| `transactions` | Real-time payment ledger | `id`, `transaction_ref`, `booking_id`, `user_id`, `amount`, `currency`, `gateway`, `status`, `payment_method`, `cashfree_order_id`, `cashfree_payment_id`, `payment_session_id`, `razorpay_order_id`, `raw_response` (JSON) |
+| `payments` | Captured payment records | `id`, `booking_id`, `payment_gateway`, `gateway_order_id`, `gateway_payment_id`, `amount`, `status`, `payment_method`, `raw_payload` (JSON) |
+| `otp_verifications` | Phone verification state | `id`, `phone`, `email`, `otp_code`, `token`, `status`, `attempts`, `expires_at`, `verified_at` |
+| `sms_logs` | SMS delivery audit trail | `id`, `recipient`, `message`, `driver`, `template_key`, `status` (`sent`, `simulated`, `failed`), `response_payload` |
+| `webhook_logs` | Inbound webhook audit | `id`, `event_id`, `event_type`, `signature`, `is_valid_signature`, `processed`, `status_message`, `payload` (JSON) |
+| `settings` | Dynamic site config | `id`, `key`, `value` |
 
 ---
 
 ## 🧪 Automated Testing & Verification
 
-The project includes an automated test suite verifying authentication, SMS gateway failovers, package CRUD operations, and payment lifecycles.
+Run the test suite using Artisan or PHPUnit:
 
-### Run the Test Suite
 ```bash
+# Run all feature and unit tests
 php artisan test
-```
 
-### Test Coverage Highlights
-- `tests/Feature/SmsGatewayTest.php`:
-  - Validates `TwilioDriver` E.164 phone formatting and API dispatch.
-  - Validates `Fast2SmsDriver` 10-digit sanitization and error payload handling.
-  - Validates `AutoFailoverDriver` automatic failover logic (primary failure $\rightarrow$ secondary success).
-  - Validates SMS template interpolation (`{site_name}`, `{otp}`, `{amount}`).
-  - Validates `sms_logs` audit recording.
-- `tests/Feature/PackageManagementTest.php`:
-  - Validates package creation, image file uploads, price updates, and deletion.
-  - Validates Super Admin authorization rules and unauthorized access restrictions.
-- `tests/Feature/Auth/*`:
-  - Validates client and vendor registration, login, password resets, and role redirection.
+# Verify all routes are registered
+php artisan route:list
+
+# Check PHP syntax across payment and SMS services
+php -l app/Services/Payment/CashfreeService.php
+php -l app/Services/Payment/PaymentGatewayManager.php
+php -l app/Http/Controllers/CashfreeController.php
+php -l app/Services/Sms/SmsManager.php
+```
 
 ---
 
 ## 🚀 Deployment & Production Optimizations
 
-When deploying to a production server (Ubuntu/Debian, Forge, cPanel, or VPS):
+When deploying to a production server (Ubuntu / Nginx / Apache / cPanel / Forge):
 
-### 1. Optimize Laravel Caches
 ```bash
+# 1. Optimize configuration and routes
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-php artisan event:cache
-```
 
-### 2. Set Production Environment
-In your production `.env`:
-```env
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://yourdomain.com
-```
+# 2. Run latest migrations
+php artisan migrate --force
 
-### 3. File Permissions
-Ensure the web server has write permissions to `storage` and `bootstrap/cache`:
-```bash
-sudo chown -R www-data:www-data storage bootstrap/cache
-sudo chmod -R 775 storage bootstrap/cache
-```
+# 3. Create storage symlink
+php artisan storage:link
 
-### 4. Nginx Server Block Example
-```nginx
-server {
-    listen 80;
-    listen [::]:80;
-    server_name yourdomain.com www.yourdomain.com;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    server_name yourdomain.com www.yourdomain.com;
-    root /var/www/Studio/public;
-
-    ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-Content-Type-Options "nosniff";
-
-    index index.php;
-    charset utf-8;
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-
-    location = /favicon.ico { access_log off; log_not_found off; }
-    location = /robots.txt  { access_log off; log_not_found off; }
-
-    error_page 404 /index.php;
-
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-
-    location ~ /\.(?!well-known).* {
-        deny all;
-    }
-}
+# 4. Build minified frontend assets
+npm run build
 ```
 
 ---
 
 ## ❓ Troubleshooting & FAQ
 
-#### Q1: Why did Twilio return error `[572002]`?
-**A**: When using a **Twilio Trial Account**, Twilio restricts outbound SMS only to numbers that have been verified in your Twilio Console under **"Verified Caller IDs"**. 
-Our **Dual-Gateway Auto-Failover** automatically detects this error and immediately routes the SMS via **Fast2SMS** so your customer still receives their message seamlessly. To send to any number on Twilio, upgrade your Twilio account from Trial to Full.
+#### Q1: How do I switch to Cashfree Live Production mode?
+> **Answer**: In `/admin/dashboard` &rarr; **Payment Gateways**, select `PRODUCTION` under Environment Mode, paste your live Cashfree App ID and Secret Key, set Simulation Mode to `Disabled`, and save.
 
-#### Q2: Fast2SMS returns `Invalid API Key` or `Route error`?
-**A**:
-1. Check that your Fast2SMS API key is active in your Fast2SMS wallet.
-2. In India, Fast2SMS uses route `q` (Quick SMS) for general testing or `otp` / `dlt` for registered DLT templates. Ensure `FAST2SMS_ROUTE=q` in `.env` or in Admin Settings.
+#### Q2: Why is Fast2SMS not delivering SMS to my phone?
+> **Answer**:
+> 1. Ensure you have entered a valid API Key in `/admin/dashboard` &rarr; **Fast2SMS & Templates**.
+> 2. Ensure your Fast2SMS account has active Quick SMS wallet balance.
+> 3. Verify that your recipient number is a valid 10-digit Indian mobile number.
+> 4. Use the **Send Test SMS** box in the admin dashboard to check the exact Fast2SMS API response.
 
-#### Q3: Uploaded package images are broken or not loading?
-**A**: Run `php artisan storage:link` to create the symbolic link between `storage/app/public` and `public/storage`.
-
-#### Q4: How do I test payments without live Razorpay credentials?
-**A**: Set `RAZORPAY_SIMULATION_MODE=1` in `.env` or enable **Simulation Mode** in Admin Dashboard $\rightarrow$ Settings. The checkout screen will allow 1-Click test captures.
+#### Q3: Does Cashfree work without live credentials in development?
+> **Answer**: Yes! Set **Instant Simulation Mode** to `Active` in the Payment Gateways settings. Checkout will provide a 1-click simulation button that tests the entire flow, updates database records, and triggers Fast2SMS alerts.
 
 ---
 
-## 📄 License & Credits
-
-- **Platform**: Developed for **Middukhera Studio & Productions**.
-- **Framework**: [Laravel](https://laravel.com) by Taylor Otwell.
-- **Icons**: [Lucide Icons](https://lucide.dev).
-- **Styling**: [TailwindCSS](https://tailwindcss.com) & [Alpine.js](https://alpinejs.dev).
-
----
-*Crafted with precision for luxury photoshoot and cinematography management.*
+**© Middukhera Studio & Productions. All Rights Reserved.**

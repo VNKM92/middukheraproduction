@@ -9,6 +9,8 @@ use App\Models\Payment;
 use App\Models\Setting;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\Payment\CashfreeService;
+use App\Services\Payment\PaymentGatewayManager;
 use App\Services\Payment\RazorpayService;
 use App\Services\Sms\SmsManager;
 use Illuminate\Http\Request;
@@ -19,10 +21,12 @@ use Illuminate\Support\Str;
 class BookingController extends Controller
 {
     protected RazorpayService $razorpayService;
+    protected CashfreeService $cashfreeService;
 
-    public function __construct(RazorpayService $razorpayService)
+    public function __construct(RazorpayService $razorpayService, CashfreeService $cashfreeService)
     {
         $this->razorpayService = $razorpayService;
+        $this->cashfreeService = $cashfreeService;
     }
 
     public function checkout($slug)
@@ -64,15 +68,14 @@ class BookingController extends Controller
             'notes' => 'nullable|string|max:1000',
             'client_phone' => 'nullable|string|max:20',
             'otp_token' => 'nullable|string',
+            'payment_gateway' => 'nullable|string|in:cashfree,razorpay',
         ];
 
         $request->validate($rules);
 
         // Check if OTP requirement is enforced
         $otpRequired = Setting::get('otp_verification_required', '0') == '1';
-        $clientPhone = $request->client_phone;
-
-       
+        $clientPhone = $request->client_phone ?: ($user->phone ?? null);
 
         if ($otpRequired && !empty($clientPhone) && !empty($request->otp_token)) {
             $otpRecord = OtpVerification::where('token', $request->otp_token)->first();
@@ -83,7 +86,9 @@ class BookingController extends Controller
 
         $package = Package::findOrFail($request->package_id);
 
-            
+        // Determine active gateway
+        $activeGateway = $request->input('payment_gateway') ?: PaymentGatewayManager::getActiveGateway();
+
         // 1. Create Booking record in pending status
         $booking = Booking::create([
             'user_id' => $user->id,
@@ -94,9 +99,9 @@ class BookingController extends Controller
             'amount' => $request->amount,
             'notes' => $request->notes,
             'customer_phone' => $clientPhone,
+            'payment_gateway' => $activeGateway,
         ]);
 
-       
         // 2. Initialize Transaction Tracking record
         $transactionRef = 'TRX-' . strtoupper(Str::random(10));
         $transaction = Transaction::create([
@@ -105,6 +110,7 @@ class BookingController extends Controller
             'user_id' => $user->id,
             'amount' => $booking->amount,
             'currency' => 'INR',
+            'gateway' => $activeGateway,
             'status' => 'initiated',
             'customer_name' => $user->name,
             'customer_email' => $user->email,
@@ -112,8 +118,65 @@ class BookingController extends Controller
             'ip_address' => $request->ip(),
         ]);
 
-          
-        // 3. Create Razorpay Order via RazorpayService
+        // 3. Initiate Payment via Selected Gateway
+        if ($activeGateway === 'cashfree') {
+            try {
+                $cfOrderId = 'order_cf_' . $booking->id . '_' . strtoupper(Str::random(6));
+                $cfResult = $this->cashfreeService->createOrder(
+                    amount: (float) $booking->amount,
+                    orderId: $cfOrderId,
+                    customer: [
+                        'id' => (string)$user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'phone' => $clientPhone,
+                    ],
+                    meta: [
+                        'return_url' => route('cashfree.return') . '?order_id=' . $cfOrderId . '&booking_id=' . $booking->id,
+                        'notify_url' => route('cashfree.webhook'),
+                        'note' => 'Booking #' . $booking->id . ' - ' . $package->name,
+                    ]
+                );
+
+                $paymentSessionId = $cfResult['payment_session_id'] ?? null;
+                $isSimulation = $cfResult['is_simulation'] ?? false;
+
+                $booking->update(['cashfree_order_id' => $cfOrderId]);
+                $transaction->update([
+                    'cashfree_order_id' => $cfOrderId,
+                    'payment_session_id' => $paymentSessionId,
+                    'status' => 'processing',
+                    'raw_response' => $cfResult['raw'] ?? null,
+                ]);
+
+                // Send Transaction Initiated / Bank OTP Notice SMS to Customer
+                if ($clientPhone) {
+                    SmsManager::sendPaymentInitiatedSms($clientPhone, [
+                        'name' => $user->name,
+                        'amount' => $booking->amount,
+                        'booking_id' => $booking->id,
+                        'package' => $package->name,
+                        'gateway' => 'Cashfree',
+                    ]);
+                }
+
+                return view('booking.payment', [
+                    'booking' => $booking,
+                    'package' => $package,
+                    'transaction' => $transaction,
+                    'activeGateway' => 'cashfree',
+                    'cashfreeSessionId' => $paymentSessionId,
+                    'cashfreeOrderId' => $cfOrderId,
+                    'cashfreeEnvironment' => $this->cashfreeService->getEnvironment(),
+                    'isMock' => $isSimulation,
+                    'warning' => $cfResult['warning'] ?? null,
+                ]);
+            } catch (\Exception $e) {
+                return redirect()->back()->withInput()->with('error', 'Could not create Cashfree order: ' . $e->getMessage());
+            }
+        }
+
+        // Razorpay Gateway Flow
         try {
             $orderResult = $this->razorpayService->createOrder(
                 amount: (float) $booking->amount,
@@ -136,18 +199,26 @@ class BookingController extends Controller
                 'raw_response' => $orderResult['raw'] ?? null,
             ]);
 
-           
+            // Send Transaction Initiated / Bank OTP Notice SMS to Customer
+            if ($clientPhone) {
+                SmsManager::sendPaymentInitiatedSms($clientPhone, [
+                    'name' => $user->name,
+                    'amount' => $booking->amount,
+                    'booking_id' => $booking->id,
+                    'package' => $package->name,
+                    'gateway' => 'Razorpay',
+                ]);
+            }
 
             return view('booking.payment', [
                 'booking' => $booking,
                 'package' => $package,
                 'transaction' => $transaction,
+                'activeGateway' => 'razorpay',
                 'isMock' => $isSimulation,
                 'keyId' => $this->razorpayService->getKeyId(),
                 'warning' => $orderResult['warning'] ?? null,
             ]);
-
-             
         } catch (\Exception $e) {
             return redirect()->back()->withInput()->with('error', 'Could not create Razorpay order: ' . $e->getMessage());
         }

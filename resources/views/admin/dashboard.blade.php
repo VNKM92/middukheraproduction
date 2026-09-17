@@ -177,29 +177,42 @@
             <div class="space-y-1">
                 <span class="px-3 text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-2">Gateways & System</span>
 
-                <!-- 9. SMS Engine -->
+                <!-- 9. Payment Gateways (Cashfree & Razorpay) -->
+                <button type="button" @click="activeTab = 'gateways'; mobileSidebarOpen = false;" 
+                    :class="activeTab === 'gateways' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
+                    class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
+                    <div class="flex items-center gap-2.5">
+                        <i data-lucide="shield-check" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'gateways' ? 'text-black' : 'text-emerald-400'"></i>
+                        <span>Payment Gateways</span>
+                    </div>
+                    <span class="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded uppercase" :class="activeTab === 'gateways' ? 'bg-black/20 text-black' : 'bg-emerald-500/20 text-emerald-300'">
+                        {{ ($allSettings['active_payment_gateway'] ?? 'cashfree') === 'cashfree' ? 'Cashfree' : 'Razorpay' }}
+                    </span>
+                </button>
+
+                <!-- 10. Fast2SMS Engine & Templates -->
                 <button type="button" @click="activeTab = 'sms_settings'; mobileSidebarOpen = false;" 
                     :class="activeTab === 'sms_settings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
                     class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
                     <div class="flex items-center gap-2.5">
                         <i data-lucide="message-square" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'sms_settings' ? 'text-black' : 'text-amber-400'"></i>
-                        <span>Custom SMS Engine</span>
+                        <span>Fast2SMS & Templates</span>
                     </div>
                     <span class="w-2 h-2 rounded-full bg-emerald-400" title="Active Failover"></span>
                 </button>
 
-                <!-- 10. Razorpay & Webhooks -->
+                <!-- 11. Webhooks & Inbound Logs -->
                 <button type="button" @click="activeTab = 'webhooks'; mobileSidebarOpen = false;" 
                     :class="activeTab === 'webhooks' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
                     class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
                     <div class="flex items-center gap-2.5">
                         <i data-lucide="webhook" class="w-4 h-4 shrink-0 transition" :class="activeTab === 'webhooks' ? 'text-black' : 'text-indigo-400'"></i>
-                        <span>Razorpay & Webhooks</span>
+                        <span>Webhook Event Logs</span>
                     </div>
                     <i data-lucide="chevron-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" :class="activeTab === 'webhooks' ? 'opacity-100 text-black' : ''"></i>
                 </button>
 
-                <!-- 11. Theme & Colors -->
+                <!-- 12. Theme & Colors -->
                 <button type="button" @click="activeTab = 'theme_settings'; mobileSidebarOpen = false;" 
                     :class="activeTab === 'theme_settings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
                     class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
@@ -210,7 +223,7 @@
                     <i data-lucide="chevron-right" class="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition" :class="activeTab === 'theme_settings' ? 'opacity-100 text-black' : ''"></i>
                 </button>
 
-                <!-- 12. Site & SEO Config -->
+                <!-- 13. Site & SEO Config -->
                 <button type="button" @click="activeTab = 'site_settings'; mobileSidebarOpen = false;" 
                     :class="activeTab === 'site_settings' ? 'bg-[var(--theme-primary)] text-black font-bold shadow-lg shadow-[var(--theme-primary)]/20' : 'text-zinc-400 hover:text-white hover:bg-white/5'" 
                     class="w-full px-3.5 py-2.5 rounded-xl text-xs font-medium transition-all duration-150 flex items-center justify-between group">
@@ -277,8 +290,9 @@
                         activeTab === 'site_settings' ? 'Site & SEO Configuration' :
                         activeTab === 'bookings' ? 'Bookings Management' :
                         activeTab === 'transactions' ? 'Captured Transactions' :
-                        activeTab === 'sms_settings' ? 'Custom SMS Engine' :
-                        activeTab === 'webhooks' ? 'Razorpay Webhooks & Gateway' :
+                        activeTab === 'gateways' ? 'Payment Gateways (Cashfree & Razorpay)' :
+                        activeTab === 'sms_settings' ? 'Fast2SMS & Message Templates' :
+                        activeTab === 'webhooks' ? 'Inbound Webhook Logs' :
                         activeTab === 'packages' ? 'Studio Pricing Packages' :
                         activeTab === 'gallery' ? 'Master Portfolio Showcase' :
                         activeTab === 'blogs' ? 'Studio Journal & Articles' :
@@ -1586,18 +1600,232 @@
         </div>
     </div>
 
-    <!-- TAB 11: CUSTOM SMS ENGINE & GATEWAYS -->
+    <!-- TAB 11: PAYMENT GATEWAYS (CASHFREE & RAZORPAY) -->
+    <div x-show="activeTab === 'gateways'" class="mt-8 space-y-8">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+                    <span>Payment Gateways & Real-Time Engine</span>
+                </h3>
+                <p class="text-xs text-zinc-400 mt-0.5">Configure Cashfree PG, Razorpay Checkout, Active Gateway Selector, and Webhook Endpoints.</p>
+            </div>
+            
+            <div class="flex items-center gap-2 bg-black/40 border border-white/10 px-3.5 py-1.5 rounded-xl text-xs">
+                <span class="text-zinc-400">Currently Active:</span>
+                <span class="font-bold text-emerald-400 uppercase font-mono">{{ ($allSettings['active_payment_gateway'] ?? 'cashfree') === 'cashfree' ? 'Cashfree Payments' : 'Razorpay' }}</span>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ route('admin.settings.save') }}" class="space-y-8">
+            @csrf
+
+            <!-- 1. Primary Active Gateway Switcher Card -->
+            <div class="site-card rounded-2xl border border-emerald-500/30 p-6 space-y-4 shadow-xl">
+                <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                    <span class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="toggle-right" class="w-4 h-4 text-theme-primary"></i>
+                        <span>Active Payment Gateway Selector</span>
+                    </span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Instant Switch</span>
+                </div>
+
+                <p class="text-xs text-zinc-300">
+                    Select which payment gateway will be presented to clients during photoshoot booking deposit checkout.
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                    <label class="relative flex items-center gap-3.5 p-4 rounded-xl border cursor-pointer transition {{ ($allSettings['active_payment_gateway'] ?? 'cashfree') === 'cashfree' ? 'bg-emerald-500/10 border-emerald-500/40' : 'bg-black/40 border-white/10 hover:border-white/20' }}">
+                        <input type="radio" name="active_payment_gateway" value="cashfree" {{ ($allSettings['active_payment_gateway'] ?? 'cashfree') === 'cashfree' ? 'checked' : '' }} class="w-4 h-4 text-emerald-500 focus:ring-0">
+                        <div class="space-y-1">
+                            <span class="font-bold text-white text-xs block flex items-center gap-1.5">
+                                <i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-400"></i> Cashfree Payments (Primary)
+                            </span>
+                            <span class="text-[11px] text-zinc-400 block">Seamless PG v3, Instant UPI QR, NetBanking, Cards & Cashfree SDK drop-in.</span>
+                        </div>
+                    </label>
+
+                    <label class="relative flex items-center gap-3.5 p-4 rounded-xl border cursor-pointer transition {{ ($allSettings['active_payment_gateway'] ?? '') === 'razorpay' ? 'bg-indigo-500/10 border-indigo-500/40' : 'bg-black/40 border-white/10 hover:border-white/20' }}">
+                        <input type="radio" name="active_payment_gateway" value="razorpay" {{ ($allSettings['active_payment_gateway'] ?? '') === 'razorpay' ? 'checked' : '' }} class="w-4 h-4 text-indigo-500 focus:ring-0">
+                        <div class="space-y-1">
+                            <span class="font-bold text-white text-xs block flex items-center gap-1.5">
+                                <i data-lucide="credit-card" class="w-3.5 h-3.5 text-indigo-400"></i> Razorpay Secure Gateway
+                            </span>
+                            <span class="text-[11px] text-zinc-400 block">Razorpay Standard Checkout modal with automatic signature verification.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 2. Dual Gateway Credentials Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <!-- CASHFREE GATEWAY CARD -->
+                <div class="site-card rounded-2xl border border-emerald-500/20 p-6 space-y-5 shadow-xl">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <span class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="zap" class="w-4 h-4 text-emerald-400"></i>
+                            <span>Cashfree PG v3 Configuration</span>
+                        </span>
+                        
+                        <div class="flex items-center gap-2">
+                            <label class="text-[11px] text-zinc-400">Enable Cashfree</label>
+                            <select name="cashfree_enabled" class="px-2 py-0.5 rounded-lg text-xs bg-black/40 border border-white/10 text-white focus:border-theme-primary">
+                                <option value="1" {{ ($allSettings['cashfree_enabled'] ?? '1') == '1' ? 'selected' : '' }}>Enabled</option>
+                                <option value="0" {{ ($allSettings['cashfree_enabled'] ?? '1') == '0' ? 'selected' : '' }}>Disabled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-zinc-300">Environment Mode</label>
+                            <select name="cashfree_environment" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-medium">
+                                <option value="SANDBOX" {{ ($allSettings['cashfree_environment'] ?? 'SANDBOX') === 'SANDBOX' ? 'selected' : '' }}>SANDBOX (Test Mode)</option>
+                                <option value="PRODUCTION" {{ ($allSettings['cashfree_environment'] ?? '') === 'PRODUCTION' ? 'selected' : '' }}>PRODUCTION (Live Payments)</option>
+                            </select>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="text-xs font-semibold text-zinc-300">API Version</label>
+                            <input type="text" name="cashfree_api_version" value="{{ $allSettings['cashfree_api_version'] ?? '2023-08-01' }}" placeholder="2023-08-01" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-zinc-300">Cashfree App ID (Client ID)</label>
+                        <input type="text" name="cashfree_app_id" value="{{ $allSettings['cashfree_app_id'] ?? '' }}" placeholder="CFxxxxxxxx or TESTxxxxxxxx" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-zinc-300">Cashfree Secret Key</label>
+                        <input type="password" name="cashfree_secret_key" value="{{ $allSettings['cashfree_secret_key'] ?? '' }}" placeholder="••••••••••••••••••••" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-zinc-300">Cashfree Webhook Secret Key</label>
+                        <input type="password" name="cashfree_webhook_secret" value="{{ $allSettings['cashfree_webhook_secret'] ?? '' }}" placeholder="Webhook Secret used in Cashfree Portal" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-zinc-300">Instant Simulation / Sandbox Mode</label>
+                        <select name="cashfree_simulation_mode" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                            <option value="1" {{ ($allSettings['cashfree_simulation_mode'] ?? '1') == '1' ? 'selected' : '' }}>Active (Simulate instant payments & test flow)</option>
+                            <option value="0" {{ ($allSettings['cashfree_simulation_mode'] ?? '1') == '0' ? 'selected' : '' }}>Disabled (Use real Cashfree Checkout SDK & API)</option>
+                        </select>
+                    </div>
+
+                    <!-- Cashfree Webhook Copy Box -->
+                    <div class="p-3.5 rounded-xl bg-black/60 border border-emerald-500/20 space-y-2">
+                        <span class="text-[11px] font-bold text-emerald-400 block flex items-center gap-1">
+                            <i data-lucide="link" class="w-3.5 h-3.5"></i> Cashfree Webhook URL:
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <input type="text" readonly value="{{ url('/cashfree/webhook') }}" id="cfWebhookUrlInput" class="w-full px-2.5 py-1.5 rounded-lg bg-black/80 border border-white/10 text-emerald-300 text-[11px] font-mono select-all">
+                            <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('cfWebhookUrlInput').value); alert('Cashfree Webhook URL copied!');" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold shrink-0 transition">
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RAZORPAY GATEWAY CARD -->
+                <div class="site-card rounded-2xl border border-indigo-500/20 p-6 space-y-5 shadow-xl">
+                    <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                        <span class="text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="credit-card" class="w-4 h-4 text-indigo-400"></i>
+                            <span>Razorpay Gateway Configuration</span>
+                        </span>
+
+                        <div class="flex items-center gap-2">
+                            <label class="text-[11px] text-zinc-400">Enable Razorpay</label>
+                            <select name="razorpay_enabled" class="px-2 py-0.5 rounded-lg text-xs bg-black/40 border border-white/10 text-white focus:border-theme-primary">
+                                <option value="1" {{ ($allSettings['razorpay_enabled'] ?? '1') == '1' ? 'selected' : '' }}>Enabled</option>
+                                <option value="0" {{ ($allSettings['razorpay_enabled'] ?? '1') == '0' ? 'selected' : '' }}>Disabled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-zinc-300">Razorpay Key ID</label>
+                        <input type="text" name="razorpay_key_id" value="{{ $allSettings['razorpay_key_id'] ?? '' }}" placeholder="rzp_live_... or rzp_test_..." class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-zinc-300">Razorpay Key Secret</label>
+                        <input type="password" name="razorpay_key_secret" value="{{ $allSettings['razorpay_key_secret'] ?? '' }}" placeholder="••••••••••••••••••••" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-zinc-300">Razorpay Webhook Secret (HMAC SHA256)</label>
+                        <input type="password" name="razorpay_webhook_secret" value="{{ $allSettings['razorpay_webhook_secret'] ?? '' }}" placeholder="Secret configured in Razorpay Dashboard" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-semibold text-zinc-300">Simulation / Sandbox Mode</label>
+                        <select name="razorpay_simulation_mode" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                            <option value="1" {{ ($allSettings['razorpay_simulation_mode'] ?? '1') == '1' ? 'selected' : '' }}>Active (Simulate instant payments & test flow)</option>
+                            <option value="0" {{ ($allSettings['razorpay_simulation_mode'] ?? '1') == '0' ? 'selected' : '' }}>Disabled (Use real Razorpay Checkout modal)</option>
+                        </select>
+                    </div>
+
+                    <!-- Razorpay Webhook Copy Box -->
+                    <div class="p-3.5 rounded-xl bg-black/60 border border-indigo-500/20 space-y-2">
+                        <span class="text-[11px] font-bold text-indigo-400 block flex items-center gap-1">
+                            <i data-lucide="link" class="w-3.5 h-3.5"></i> Razorpay Webhook URL:
+                        </span>
+                        <div class="flex items-center gap-2">
+                            <input type="text" readonly value="{{ url('/razorpay/webhook') }}" id="rzpWebhookUrlInput" class="w-full px-2.5 py-1.5 rounded-lg bg-black/80 border border-white/10 text-indigo-300 text-[11px] font-mono select-all">
+                            <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('rzpWebhookUrlInput').value); alert('Razorpay Webhook URL copied!');" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-bold shrink-0 transition">
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <button type="submit" class="w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-xl shadow-[var(--theme-primary)]/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                <span>Save Payment Gateway Configurations</span>
+            </button>
+        </form>
+    </div>
+
+    <!-- TAB 12: FAST2SMS ENGINE & CUSTOM TEMPLATES -->
     <div x-show="activeTab === 'sms_settings'" class="mt-8 space-y-8">
         <div>
             <h3 class="text-lg font-bold text-white flex items-center gap-2">
                 <i data-lucide="message-square" class="w-5 h-5 text-amber-400"></i>
-                <span>Custom SMS Gateway & Dynamic Message Templates</span>
+                <span>Fast2SMS Quick SMS Pack & Dynamic Message Templates</span>
             </h3>
-            <p class="text-xs text-zinc-400 mt-0.5">Configure your SMS driver (Fast2SMS, MSG91, Twilio, Custom HTTP, Simulation), API credentials, and customizable message templates.</p>
+            <p class="text-xs text-zinc-400 mt-0.5">Configure Fast2SMS Quick SMS pack (Route 'q'), customized templates for transaction initiation / bank OTP notice, payment confirmation, and live testing.</p>
+        </div>
+
+        <!-- Dynamic Variables Reference Card -->
+        <div class="site-card rounded-2xl border border-amber-500/30 p-5 space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
+                    <i data-lucide="tags" class="w-4 h-4"></i> Available Template Placeholders
+                </span>
+                <span class="text-[10px] text-zinc-400">Automatically replaced upon dispatch</span>
+            </div>
+            <div class="flex flex-wrap gap-2 text-[11px] font-mono">
+                <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-theme-primary font-bold">{name} <span class="font-sans font-normal text-zinc-400 text-[10px]">(Client Name)</span></span>
+                <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-emerald-400 font-bold">{amount} <span class="font-sans font-normal text-zinc-400 text-[10px]">(Amount Paid)</span></span>
+                <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-cyan-400 font-bold">{booking_id} <span class="font-sans font-normal text-zinc-400 text-[10px]">(Booking #)</span></span>
+                <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-amber-400 font-bold">{package} <span class="font-sans font-normal text-zinc-400 text-[10px]">(Package Title)</span></span>
+                <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-indigo-400 font-bold">{gateway} <span class="font-sans font-normal text-zinc-400 text-[10px]">(Cashfree / Razorpay)</span></span>
+                <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-pink-400 font-bold">{payment_id} <span class="font-sans font-normal text-zinc-400 text-[10px]">(Transaction ID)</span></span>
+                <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-zinc-300 font-bold">{site_name} <span class="font-sans font-normal text-zinc-400 text-[10px]">(Studio Brand)</span></span>
+                <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-emerald-300 font-bold">{currency} <span class="font-sans font-normal text-zinc-400 text-[10px]">(Currency Symbol)</span></span>
+                <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-cyan-300 font-bold">{otp} <span class="font-sans font-normal text-zinc-400 text-[10px]">(Verification Code)</span></span>
+                <span class="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-zinc-400 font-bold">{datetime} <span class="font-sans font-normal text-zinc-400 text-[10px]">(Date & Time)</span></span>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- Left 7 cols: Configuration Form -->
+            <!-- Left 7 cols: Configuration & Templates Form -->
             <div class="lg:col-span-7 space-y-6">
                 <form method="POST" action="{{ route('admin.settings.save') }}" class="site-card rounded-2xl border border-white/10 p-6 space-y-6">
                     @csrf
@@ -1605,12 +1833,12 @@
                     <div class="flex items-center justify-between border-b border-white/10 pb-3">
                         <span class="text-sm font-bold text-white flex items-center gap-2">
                             <i data-lucide="sliders" class="w-4 h-4 text-theme-primary"></i>
-                            <span>SMS Gateway Configuration</span>
+                            <span>Fast2SMS Gateway Settings</span>
                         </span>
                         
                         <!-- Toggle SMS Status -->
                         <div class="flex items-center gap-2">
-                            <label class="text-xs text-zinc-400">Enable SMS Service</label>
+                            <label class="text-xs text-zinc-400">Enable SMS</label>
                             <select name="sms_enabled" class="px-2.5 py-1 rounded-lg text-xs bg-black/40 border border-white/10 text-white focus:border-theme-primary">
                                 <option value="1" {{ ($allSettings['sms_enabled'] ?? '1') == '1' ? 'selected' : '' }}>Enabled</option>
                                 <option value="0" {{ ($allSettings['sms_enabled'] ?? '1') == '0' ? 'selected' : '' }}>Disabled (Log Only)</option>
@@ -1622,130 +1850,115 @@
                     <div class="space-y-1">
                         <label class="text-xs font-semibold text-zinc-300">Active SMS Gateway Driver</label>
                         <select name="sms_driver" class="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-medium">
-                            <option value="auto" {{ ($allSettings['sms_driver'] ?? 'auto') == 'auto' ? 'selected' : '' }}>⭐ Multi-Gateway Auto Failover (Twilio First &rarr; Fast2SMS Fallback)</option>
+                            <option value="fast2sms" {{ ($allSettings['sms_driver'] ?? 'fast2sms') == 'fast2sms' ? 'selected' : '' }}>⭐ Fast2SMS (Quick SMS Pack - Instant India Delivery)</option>
+                            <option value="auto" {{ ($allSettings['sms_driver'] ?? '') == 'auto' ? 'selected' : '' }}>Multi-Gateway Auto Failover (Fast2SMS &rarr; Twilio Fallback)</option>
                             <option value="twilio" {{ ($allSettings['sms_driver'] ?? '') == 'twilio' ? 'selected' : '' }}>Twilio (Global International SMS)</option>
-                            <option value="fast2sms" {{ ($allSettings['sms_driver'] ?? '') == 'fast2sms' ? 'selected' : '' }}>Fast2SMS (Quick SMS for India)</option>
                             <option value="msg91" {{ ($allSettings['sms_driver'] ?? '') == 'msg91' ? 'selected' : '' }}>MSG91 (Enterprise Flow API & DLT)</option>
-                            <option value="custom_http" {{ ($allSettings['sms_driver'] ?? '') == 'custom_http' ? 'selected' : '' }}>Custom HTTP Webhook / Generic SMS URL Gateway</option>
-                            <option value="simulation" {{ ($allSettings['sms_driver'] ?? '') == 'simulation' ? 'selected' : '' }}>Log & Simulation Mode (Dev / Test without live SMS credits)</option>
+                            <option value="custom_http" {{ ($allSettings['sms_driver'] ?? '') == 'custom_http' ? 'selected' : '' }}>Custom HTTP Generic SMS URL Gateway</option>
+                            <option value="simulation" {{ ($allSettings['sms_driver'] ?? '') == 'simulation' ? 'selected' : '' }}>Log & Simulation Mode (Dev / Test without live credits)</option>
                         </select>
                     </div>
 
-                    <!-- Twilio Fields -->
-                    <div class="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
+                    <!-- Fast2SMS Quick SMS Pack Fields -->
+                    <div class="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-3">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-white flex items-center gap-1.5">
-                                <i data-lucide="phone-call" class="w-3.5 h-3.5 text-rose-400"></i> Twilio SMS Credentials (Primary Gateway)
+                            <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                                <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Fast2SMS Quick SMS Pack Credentials
                             </span>
-                            <span class="text-[10px] text-zinc-400">Works with DB or .env</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <div class="space-y-1">
-                                <label class="text-[11px] text-zinc-400">Twilio Account SID</label>
-                                <input type="text" name="twilio_sid" value="{{ $allSettings['twilio_sid'] ?? '' }}" placeholder="ACxxxxxxxx" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-[11px] text-zinc-400">Twilio Auth Token</label>
-                                <input type="password" name="twilio_token" value="{{ $allSettings['twilio_token'] ?? '' }}" placeholder="Auth Token" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-[11px] text-zinc-400">From Phone Number</label>
-                                <input type="text" name="twilio_from_number" value="{{ $allSettings['twilio_from_number'] ?? '' }}" placeholder="+1234567890" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Fast2SMS Fields -->
-                    <div class="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-white flex items-center gap-1.5">
-                                <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Fast2SMS Credentials (Secondary / India Gateway)
-                            </span>
-                            <span class="text-[10px] text-zinc-400">Works with DB or .env</span>
+                            <span class="text-[10px] text-zinc-400 font-mono">Route: Quick SMS (q)</span>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="sm:col-span-2 space-y-1">
-                                <label class="text-[11px] text-zinc-400">Fast2SMS Authorization API Key</label>
-                                <input type="password" name="fast2sms_api_key" value="{{ $allSettings['fast2sms_api_key'] ?? '' }}" placeholder="Paste Fast2SMS API Key" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
+                                <label class="text-[11px] text-zinc-300 font-semibold">Fast2SMS Authorization API Key</label>
+                                <input type="password" name="fast2sms_api_key" value="{{ $allSettings['fast2sms_api_key'] ?? '' }}" placeholder="Paste Fast2SMS API Key from fast2sms.com" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
                             </div>
                             <div class="space-y-1">
-                                <label class="text-[11px] text-zinc-400">SMS Route</label>
+                                <label class="text-[11px] text-zinc-300 font-semibold">SMS Route</label>
                                 <select name="fast2sms_route" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
-                                    <option value="q" {{ ($allSettings['fast2sms_route'] ?? 'q') == 'q' ? 'selected' : '' }}>Quick SMS (q)</option>
+                                    <option value="q" {{ ($allSettings['fast2sms_route'] ?? 'q') == 'q' ? 'selected' : '' }}>Quick SMS (q) - Recommended</option>
                                     <option value="otp" {{ ($allSettings['fast2sms_route'] ?? '') == 'otp' ? 'selected' : '' }}>OTP Route (otp)</option>
                                     <option value="v3" {{ ($allSettings['fast2sms_route'] ?? '') == 'v3' ? 'selected' : '' }}>Promotional (v3)</option>
                                     <option value="dlt" {{ ($allSettings['fast2sms_route'] ?? '') == 'dlt' ? 'selected' : '' }}>DLT Manual (dlt)</option>
                                 </select>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- MSG91 Fields -->
-                    <div class="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
-                        <span class="text-xs font-bold text-white flex items-center gap-1.5">
-                            <i data-lucide="send" class="w-3.5 h-3.5 text-cyan-400"></i> MSG91 Credentials
-                        </span>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                             <div class="space-y-1">
-                                <label class="text-[11px] text-zinc-400">MSG91 Auth Key</label>
-                                <input type="password" name="msg91_auth_key" value="{{ $allSettings['msg91_auth_key'] ?? '' }}" placeholder="Auth Key" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
+                                <label class="text-[11px] text-zinc-400">Sender ID (Optional for DLT)</label>
+                                <input type="text" name="fast2sms_sender_id" value="{{ $allSettings['fast2sms_sender_id'] ?? '' }}" placeholder="e.g. FSTSMS or MIDDUK" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
                             </div>
                             <div class="space-y-1">
-                                <label class="text-[11px] text-zinc-400">Sender ID (DLT Header)</label>
-                                <input type="text" name="msg91_sender_id" value="{{ $allSettings['msg91_sender_id'] ?? 'MIDDUK' }}" placeholder="e.g. MIDDUK" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-[11px] text-zinc-400">MSG91 Flow / DLT Template ID</label>
-                                <input type="text" name="msg91_dlt_template_id" value="{{ $allSettings['msg91_dlt_template_id'] ?? '' }}" placeholder="e.g. 6428f5..." class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
+                                <label class="text-[11px] text-zinc-400">Entity ID (Optional for DLT)</label>
+                                <input type="text" name="fast2sms_entity_id" value="{{ $allSettings['fast2sms_entity_id'] ?? '' }}" placeholder="e.g. 120115..." class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Custom HTTP Generic SMS Gateway -->
-                    <div class="p-4 rounded-xl bg-white/5 border border-white/5 space-y-3">
-                        <span class="text-xs font-bold text-white flex items-center gap-1.5">
-                            <i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-400"></i> Custom Generic SMS Webhook / API URL
-                        </span>
-                        <div class="space-y-1">
-                            <label class="text-[11px] text-zinc-400">Gateway URL (Supports placeholders <code class="text-amber-300">{phone}</code> and <code class="text-amber-300">{message}</code>)</label>
-                            <input type="text" name="custom_sms_url" value="{{ $allSettings['custom_sms_url'] ?? '' }}" placeholder="https://api.smsvendor.com/send?apiKey=XYZ&to={phone}&msg={message}" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
-                        </div>
-                    </div>
-
-                    <!-- Custom Message Templates -->
-                    <div class="space-y-4 pt-2 border-t border-white/10">
+                    <!-- Custom Message Templates Section -->
+                    <div class="space-y-5 pt-2 border-t border-white/10">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-white uppercase tracking-wider block">Customizable SMS Templates</span>
-                            <span class="text-[10px] text-amber-300/80">Supports tags: {otp}, {name}, {package}, {amount}, {site_name}, {currency}, {merchant}</span>
+                            <span class="text-xs font-bold text-white uppercase tracking-wider block flex items-center gap-1.5">
+                                <i data-lucide="file-text" class="w-4 h-4 text-theme-primary"></i> Customizable Message Templates
+                            </span>
+                            <span class="text-[10px] text-emerald-400">Fast2SMS Quick Pack Ready</span>
                         </div>
                         
-                        <div class="space-y-1">
-                            <label class="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-                                <span>1. OTP Phone Verification SMS Template</span>
-                                <span class="text-[10px] text-zinc-400">Placeholders: <code class="text-theme-primary">{otp}</code>, <code class="text-theme-primary">{package}</code>, <code class="text-theme-primary">{amount}</code>, <code class="text-theme-primary">{name}</code></span>
+                        <!-- 1. Transaction Initiated / Bank OTP Notice SMS -->
+                        <div class="space-y-1.5 p-4 rounded-xl bg-white/5 border border-white/5">
+                            <label class="text-xs font-bold text-white flex items-center justify-between">
+                                <span class="flex items-center gap-1.5 text-cyan-300">
+                                    <i data-lucide="send" class="w-3.5 h-3.5"></i> 1. Payment Initiated / Bank OTP Notice SMS Template
+                                </span>
+                                <span class="text-[10px] text-zinc-400">Dispatched when checkout begins</span>
+                            </label>
+                            <p class="text-[11px] text-zinc-400">Sent to customer when transaction starts so they know to authorize the bank OTP.</p>
+                            <textarea name="sms_template_payment_initiated" rows="2" class="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">{{ $allSettings['sms_template_payment_initiated'] ?? "Dear {name}, transaction of {currency}{amount} for booking #{booking_id} ({package}) has been initiated via {gateway}. Please enter the OTP sent by your bank to authorize the payment. - {site_name}" }}</textarea>
+                        </div>
+
+                        <!-- 2. Payment Success Custom SMS -->
+                        <div class="space-y-1.5 p-4 rounded-xl bg-white/5 border border-white/5">
+                            <label class="text-xs font-bold text-white flex items-center justify-between">
+                                <span class="flex items-center gap-1.5 text-emerald-300">
+                                    <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> 2. Payment Success SMS Template
+                                </span>
+                                <span class="text-[10px] text-zinc-400">Dispatched upon payment capture</span>
+                            </label>
+                            <p class="text-[11px] text-zinc-400">Sent immediately after successful Cashfree or Razorpay payment capture.</p>
+                            <textarea name="sms_template_payment_success" rows="2" class="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">{{ $allSettings['sms_template_payment_success'] ?? "Dear {name}, payment of {currency}{amount} for booking #{booking_id} ({package}) was successful! Txn ID: {payment_id} via {gateway}. Thank you - {site_name}." }}</textarea>
+                        </div>
+
+                        <!-- 3. Payment Failed SMS -->
+                        <div class="space-y-1.5 p-4 rounded-xl bg-white/5 border border-white/5">
+                            <label class="text-xs font-bold text-white flex items-center justify-between">
+                                <span class="flex items-center gap-1.5 text-rose-300">
+                                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> 3. Payment Failed SMS Template
+                                </span>
+                                <span class="text-[10px] text-zinc-400">Dispatched if transaction drops</span>
+                            </label>
+                            <textarea name="sms_template_payment_failed" rows="2" class="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">{{ $allSettings['sms_template_payment_failed'] ?? "Dear {name}, your payment of {currency}{amount} for booking #{booking_id} could not be completed. Reason: {reason}. Please retry at: {retry_url}" }}</textarea>
+                        </div>
+
+                        <!-- 4. Client OTP Verification SMS -->
+                        <div class="space-y-1.5 p-4 rounded-xl bg-white/5 border border-white/5">
+                            <label class="text-xs font-bold text-white flex items-center justify-between">
+                                <span class="flex items-center gap-1.5 text-theme-primary">
+                                    <i data-lucide="key" class="w-3.5 h-3.5"></i> 4. Client Mobile Verification OTP SMS Template
+                                </span>
+                                <span class="text-[10px] text-zinc-400">Step 1 OTP verification</span>
                             </label>
                             <textarea name="sms_template_otp" rows="2" class="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">{{ $allSettings['sms_template_otp'] ?? "Your {site_name} verification code is: {otp} for {package} booking of {currency}{amount}. Valid for 10 minutes. Please do not share this code." }}</textarea>
                         </div>
 
+                        <!-- 5. Admin Alert Phone -->
                         <div class="space-y-1">
-                            <label class="text-xs font-semibold text-zinc-300">2. Payment Success SMS Template</label>
-                            <textarea name="sms_template_payment_success" rows="2" class="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">{{ $allSettings['sms_template_payment_success'] ?? "Dear {name}, payment of {currency}{amount} for booking #{booking_id} ({package}) was successful! Txn ID: {payment_id}. Thank you - {site_name}." }}</textarea>
-                        </div>
-
-                        <div class="space-y-1">
-                            <label class="text-xs font-semibold text-zinc-300">3. Payment Failed SMS Template</label>
-                            <textarea name="sms_template_payment_failed" rows="2" class="w-full px-3 py-2 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">{{ $allSettings['sms_template_payment_failed'] ?? "Dear {name}, your payment of {currency}{amount} for booking #{booking_id} could not be completed. Reason: {reason}. Please retry at: {retry_url}" }}</textarea>
-                        </div>
-
-                        <div class="space-y-1">
-                            <label class="text-xs font-semibold text-zinc-300">Admin Alert Mobile Phone Number</label>
-                            <input type="text" name="sms_admin_phone" value="{{ $allSettings['sms_admin_phone'] ?? '' }}" placeholder="+91 98765 43210 (To receive SMS alerts on new bookings)" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                            <label class="text-xs font-semibold text-zinc-300">Admin Notification Mobile Phone Number</label>
+                            <input type="text" name="sms_admin_phone" value="{{ $allSettings['sms_admin_phone'] ?? '' }}" placeholder="+91 98765 43210 (To receive SMS alerts on new confirmed bookings)" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
                         </div>
                     </div>
 
                     <button type="submit" class="w-full py-3.5 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-lg flex items-center justify-center gap-2">
                         <i data-lucide="save" class="w-4 h-4"></i>
-                        <span>Save SMS Settings & Templates</span>
+                        <span>Save Fast2SMS Settings & Message Templates</span>
                     </button>
                 </form>
             </div>
@@ -1756,18 +1969,18 @@
                 <div class="site-card rounded-2xl border border-amber-500/30 p-6 space-y-4 shadow-xl">
                     <h4 class="text-sm font-bold text-white flex items-center gap-2">
                         <i data-lucide="send" class="w-4 h-4 text-amber-400"></i>
-                        <span>Send Test SMS Tool</span>
+                        <span>Send Test SMS via Fast2SMS Quick Pack</span>
                     </h4>
-                    <p class="text-xs text-zinc-400">Test Twilio, Fast2SMS, or Auto Failover mode and verify instant delivery.</p>
+                    <p class="text-xs text-zinc-400">Dispatch a live test SMS to any 10-digit Indian number to test Fast2SMS API key.</p>
 
                     <form method="POST" action="{{ route('admin.sms.test') }}" class="space-y-3">
                         @csrf
                         <div class="space-y-1">
                             <label class="text-[11px] text-zinc-300 font-semibold">Gateway / Driver to Test</label>
                             <select name="test_driver" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
-                                <option value="auto">Auto (Twilio Primary &rarr; Fast2SMS Fallback)</option>
+                                <option value="fast2sms">⭐ Fast2SMS (Quick SMS Pack)</option>
+                                <option value="auto">Auto Multi-Gateway Failover</option>
                                 <option value="twilio">Twilio Gateway Direct</option>
-                                <option value="fast2sms">Fast2SMS Gateway Direct</option>
                                 <option value="msg91">MSG91 Gateway Direct</option>
                                 <option value="custom_http">Custom HTTP Gateway</option>
                                 <option value="simulation">Simulation / Log Driver</option>
@@ -1775,18 +1988,18 @@
                         </div>
 
                         <div class="space-y-1">
-                            <label class="text-[11px] text-zinc-300 font-semibold">Recipient Mobile Number</label>
-                            <input type="text" name="test_phone" required placeholder="+91 98765 43210 or 9876543210" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
+                            <label class="text-[11px] text-zinc-300 font-semibold">Recipient Indian Mobile Number</label>
+                            <input type="text" name="test_phone" required placeholder="9876543210 or +919876543210" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary font-mono">
                         </div>
 
                         <div class="space-y-1">
                             <label class="text-[11px] text-zinc-300 font-semibold">Message Content</label>
-                            <textarea name="test_message" rows="2" required class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">Hello from Middukhera Production! This is a live test SMS dispatch from your SMS gateway engine.</textarea>
+                            <textarea name="test_message" rows="2" required class="w-full px-3 py-2 rounded-lg bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">Hello from Middukhera Production! This is a live test SMS dispatch from your Fast2SMS Quick Pack engine.</textarea>
                         </div>
 
                         <button type="submit" class="w-full py-2.5 rounded-xl font-bold text-xs bg-amber-500 hover:bg-amber-400 text-black shadow-md flex items-center justify-center gap-1.5 transition">
                             <i data-lucide="paperclip" class="w-3.5 h-3.5"></i>
-                            <span>Send Live Test SMS</span>
+                            <span>Send Fast2SMS Test SMS</span>
                         </button>
                     </form>
                 </div>
@@ -1829,82 +2042,68 @@
         </div>
     </div>
 
-    <!-- TAB 12: RAZORPAY WEBHOOKS & MONITORING -->
+    <!-- TAB 13: ASYNCHRONOUS WEBHOOK MONITORING (CASHFREE & RAZORPAY) -->
     <div x-show="activeTab === 'webhooks'" class="mt-8 space-y-8" x-data="{ selectedWebhook: null }">
         <div>
             <h3 class="text-lg font-bold text-white flex items-center gap-2">
                 <i data-lucide="webhook" class="w-5 h-5 text-indigo-400"></i>
-                <span>Razorpay Gateway & Asynchronous Webhook Monitoring</span>
+                <span>Cashfree & Razorpay Webhook Event Audit Logs</span>
             </h3>
-            <p class="text-xs text-zinc-400 mt-0.5">Secure payment capture, idempotency verification, and real-time webhook payload logs.</p>
+            <p class="text-xs text-zinc-400 mt-0.5">Real-time asynchronous payment capture, idempotency verification, and webhook payload monitoring.</p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- Left 6 cols: Webhook Endpoints & Keys -->
-            <div class="lg:col-span-6 space-y-6">
-                <!-- Webhook Endpoint Copy Card -->
-                <div class="site-card rounded-2xl border border-indigo-500/30 p-6 space-y-4 shadow-xl">
+            <!-- Left 5 cols: Webhook Endpoints -->
+            <div class="lg:col-span-5 space-y-6">
+                <!-- Cashfree Webhook Card -->
+                <div class="site-card rounded-2xl border border-emerald-500/30 p-6 space-y-3 shadow-xl">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
-                            <i data-lucide="link" class="w-4 h-4"></i>
-                            <span>Your Live Razorpay Webhook URL</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+                            <i data-lucide="zap" class="w-4 h-4"></i>
+                            <span>Cashfree Webhook Endpoint</span>
                         </span>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300">CSRF Exempt</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">CSRF Exempt</span>
                     </div>
 
                     <p class="text-xs text-zinc-300 leading-relaxed">
-                        Copy this URL and paste it into your <strong>Razorpay Dashboard &rarr; Settings &rarr; Webhooks</strong>. Ensure events <code class="text-indigo-300">payment.captured</code>, <code class="text-indigo-300">payment.failed</code>, and <code class="text-indigo-300">order.paid</code> are enabled.
+                        Configure this URL in your <strong>Cashfree Merchant Dashboard &rarr; Developers &rarr; Webhooks</strong>. Enable events <code class="text-emerald-300">PAYMENT_SUCCESS_WEBHOOK</code> and <code class="text-emerald-300">ORDER_PAID_SUCCESS</code>.
                     </p>
 
                     <div class="flex items-center gap-2">
-                        <input type="text" readonly value="{{ url('/razorpay/webhook') }}" id="webhookUrlInput" class="w-full px-3 py-2.5 rounded-xl bg-black/60 border border-indigo-500/30 text-indigo-300 text-xs font-mono select-all">
-                        <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('webhookUrlInput').value); alert('Webhook URL copied to clipboard!');" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shrink-0 transition flex items-center gap-1.5">
+                        <input type="text" readonly value="{{ url('/cashfree/webhook') }}" id="cfWhInput" class="w-full px-3 py-2 rounded-xl bg-black/60 border border-emerald-500/30 text-emerald-300 text-xs font-mono select-all">
+                        <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('cfWhInput').value); alert('Cashfree Webhook URL copied!');" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shrink-0 transition flex items-center gap-1">
                             <i data-lucide="copy" class="w-3.5 h-3.5"></i>
                             <span>Copy</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- Razorpay Gateway Settings Form -->
-                <form method="POST" action="{{ route('admin.settings.save') }}" class="site-card rounded-2xl border border-white/10 p-6 space-y-5">
-                    @csrf
-                    <h4 class="text-sm font-bold text-white flex items-center gap-2 border-b border-white/10 pb-3">
-                        <i data-lucide="key" class="w-4 h-4 text-theme-primary"></i>
-                        <span>Razorpay API & Webhook Credentials</span>
-                    </h4>
-
-                    <div class="space-y-1">
-                        <label class="text-xs font-semibold text-zinc-300">Razorpay Key ID</label>
-                        <input type="text" name="razorpay_key_id" value="{{ $allSettings['razorpay_key_id'] ?? '' }}" placeholder="rzp_live_... or rzp_test_..." class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
+                <!-- Razorpay Webhook Card -->
+                <div class="site-card rounded-2xl border border-indigo-500/30 p-6 space-y-3 shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                            <i data-lucide="link" class="w-4 h-4"></i>
+                            <span>Razorpay Webhook Endpoint</span>
+                        </span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300">CSRF Exempt</span>
                     </div>
 
-                    <div class="space-y-1">
-                        <label class="text-xs font-semibold text-zinc-300">Razorpay Key Secret</label>
-                        <input type="password" name="razorpay_key_secret" value="{{ $allSettings['razorpay_key_secret'] ?? '' }}" placeholder="••••••••••••••••" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
-                    </div>
+                    <p class="text-xs text-zinc-300 leading-relaxed">
+                        Configure this URL in your <strong>Razorpay Dashboard &rarr; Settings &rarr; Webhooks</strong>. Enable events <code class="text-indigo-300">payment.captured</code> and <code class="text-indigo-300">order.paid</code>.
+                    </p>
 
-                    <div class="space-y-1">
-                        <label class="text-xs font-semibold text-zinc-300">Razorpay Webhook Secret (HMAC SHA256)</label>
-                        <input type="password" name="razorpay_webhook_secret" value="{{ $allSettings['razorpay_webhook_secret'] ?? '' }}" placeholder="Secret used in Razorpay Webhooks dashboard" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs font-mono focus:border-theme-primary">
+                    <div class="flex items-center gap-2">
+                        <input type="text" readonly value="{{ url('/razorpay/webhook') }}" id="rzpWhInput" class="w-full px-3 py-2 rounded-xl bg-black/60 border border-indigo-500/30 text-indigo-300 text-xs font-mono select-all">
+                        <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('rzpWhInput').value); alert('Razorpay Webhook URL copied!');" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shrink-0 transition flex items-center gap-1">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                            <span>Copy</span>
+                        </button>
                     </div>
-
-                    <div class="space-y-1">
-                        <label class="text-xs font-semibold text-zinc-300">Simulation / Sandbox Mode</label>
-                        <select name="razorpay_simulation_mode" class="w-full px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/10 text-white text-xs focus:border-theme-primary">
-                            <option value="1" {{ ($allSettings['razorpay_simulation_mode'] ?? '1') == '1' ? 'selected' : '' }}>Active (Simulate instant payments & test flow)</option>
-                            <option value="0" {{ ($allSettings['razorpay_simulation_mode'] ?? '1') == '0' ? 'selected' : '' }}>Disabled (Use live / test API keys with real Razorpay Checkout modal)</option>
-                        </select>
-                    </div>
-
-                    <button type="submit" class="w-full py-3 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-lg flex items-center justify-center gap-2">
-                        <i data-lucide="save" class="w-4 h-4"></i>
-                        <span>Save Razorpay Settings</span>
-                    </button>
-                </form>
+                </div>
             </div>
 
-            <!-- Right 6 cols: Inbound Webhook Event Audit Logs -->
-            <div class="lg:col-span-6 site-card rounded-2xl border border-white/10 p-6 space-y-4">
+            <!-- Right 7 cols: Inbound Webhook Event Audit Logs -->
+            <div class="lg:col-span-7 site-card rounded-2xl border border-white/10 p-6 space-y-4">
                 <div class="flex items-center justify-between border-b border-white/10 pb-3">
                     <span class="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
                         <i data-lucide="radio" class="w-4 h-4 text-indigo-400"></i>

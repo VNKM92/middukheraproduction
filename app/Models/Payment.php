@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 
-#[Fillable(['booking_id', 'razorpay_payment_id', 'amount', 'status', 'payment_method', 'raw_payload'])]
+#[Fillable(['booking_id', 'payment_gateway', 'gateway_order_id', 'gateway_payment_id', 'razorpay_payment_id', 'amount', 'status', 'payment_method', 'raw_payload'])]
 class Payment extends Model
 {
     protected function casts(): array

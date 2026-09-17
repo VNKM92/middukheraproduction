@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\CashfreeController;
+use App\Http\Controllers\CashfreeWebhookController;
 use App\Http\Controllers\ClientDashboardController;
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\RazorpayWebhookController;
@@ -38,6 +40,11 @@ Route::post('/booking/store', [BookingController::class, 'store'])->name('bookin
 Route::post('/booking/create-order', [BookingController::class, 'createOrderApi'])->name('booking.createOrder');
 Route::post('/booking/verify-payment', [BookingController::class, 'verifyPaymentApi'])->name('booking.verifyPayment');
 Route::post('/booking/callback', [BookingController::class, 'callback'])->name('booking.callback');
+
+// Cashfree PG Return & Verification
+Route::get('/cashfree/return', [CashfreeController::class, 'return'])->name('cashfree.return');
+Route::post('/cashfree/return', [CashfreeController::class, 'return'])->name('cashfree.return.post');
+Route::post('/api/cashfree/verify', [CashfreeController::class, 'verifyApi'])->name('cashfree.verify');
 
 // Phone / SMS OTP Verification Endpoints
 Route::post('/otp/send', [\App\Http\Controllers\OtpController::class, 'send'])->name('otp.send');
@@ -98,7 +105,8 @@ Route::prefix('admin')->middleware(['auth', \App\Http\Middleware\EnsureAdmin::cl
     Route::delete('/message/{message}', [AdminDashboardController::class, 'deleteMessage'])->name('admin.message.delete');
 });
 
-// Razorpay Webhooks
+// Webhooks (CSRF Exempt in bootstrap/app.php)
+Route::post('/cashfree/webhook', [CashfreeWebhookController::class, 'handle'])->name('cashfree.webhook');
 Route::post('/razorpay/webhook', [RazorpayWebhookController::class, 'handle'])->name('razorpay.webhook');
 Route::post('/webhooks/razorpay', [RazorpayWebhookController::class, 'handle'])->name('razorpay.webhook.alias');
 

@@ -14,9 +14,12 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
     'amount',
     'notes',
     'customer_phone',
+    'payment_gateway',
     'razorpay_order_id',
     'razorpay_payment_id',
-    'razorpay_signature'
+    'razorpay_signature',
+    'cashfree_order_id',
+    'cashfree_payment_id'
 ])]
 class Booking extends Model
 {

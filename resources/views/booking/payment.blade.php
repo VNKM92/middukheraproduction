@@ -10,12 +10,24 @@
         </div>
 
         <div class="space-y-2">
-            <span class="text-xs font-bold uppercase tracking-widest text-theme-primary">Step 2 &bull; Razorpay Secure Checkout</span>
+            <span class="text-xs font-bold uppercase tracking-widest text-theme-primary">
+                Step 2 &bull; {{ ($activeGateway ?? 'cashfree') === 'cashfree' ? 'Cashfree Secure Gateway' : 'Razorpay Secure Checkout' }}
+            </span>
             <h1 class="text-3xl font-serif font-bold text-white">Complete Booking Deposit</h1>
             <p class="text-xs text-zinc-400">
                 Booking ID: <strong class="text-white font-mono">#{{ $booking->id }}</strong> &bull; 
-                Txn Ref: <strong class="text-cyan-400 font-mono">{{ $transaction->transaction_ref ?? ('TRX-' . $booking->id) }}</strong>
+                Txn Ref: <strong class="text-cyan-400 font-mono">{{ $transaction->transaction_ref ?? ('TRX-' . $booking->id) }}</strong> &bull;
+                Gateway: <strong class="text-amber-400 font-mono uppercase">{{ $activeGateway ?? 'cashfree' }}</strong>
             </p>
+        </div>
+
+        <!-- Bank OTP & Initiation SMS Notice -->
+        <div class="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 text-xs text-left flex items-start gap-3">
+            <i data-lucide="smartphone" class="w-4 h-4 shrink-0 mt-0.5 text-cyan-400"></i>
+            <div>
+                <span class="font-bold text-white block">SMS Notification Dispatched</span>
+                <span class="text-zinc-300">A transaction notification SMS was sent to your registered phone. During payment, your bank will send a secure OTP to authorize this deposit.</span>
+            </div>
         </div>
 
         <!-- Warning Alert if applicable -->
@@ -58,94 +70,168 @@
             <span id="payment-error-message"></span>
         </div>
 
-        <!-- Payment Actions -->
-        @if($isMock)
-            <div class="space-y-4 pt-2">
-                <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs leading-relaxed">
-                    <strong>Sandbox / Simulation Active:</strong> Instant sandbox mode is active. Click below to simulate an immediate Razorpay capture, dispatch SMS alerts, and confirm booking.
+        <!-- ============================================================== -->
+        <!-- PAYMENT GATEWAY DISPATCH ACTIONS -->
+        <!-- ============================================================== -->
+        @if(($activeGateway ?? 'cashfree') === 'cashfree')
+            <!-- CASHFREE GATEWAY FLOW -->
+            @if($isMock)
+                <div class="space-y-4 pt-2">
+                    <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs leading-relaxed">
+                        <strong>Cashfree Sandbox / Simulation Active:</strong> Instant test mode is enabled. Click below to simulate a successful Cashfree payment capture and trigger Fast2SMS alerts.
+                    </div>
+
+                    <form method="GET" action="{{ route('cashfree.return') }}">
+                        <input type="hidden" name="booking_id" value="{{ $booking->id }}" />
+                        <input type="hidden" name="order_id" value="{{ $cashfreeOrderId ?? ($booking->cashfree_order_id ?? ('cf_' . $booking->id)) }}" />
+                        <input type="hidden" name="mock_payment" value="1" />
+                        <button type="submit" class="w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-xl shadow-[var(--theme-primary)]/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            <span>Confirm & Simulate Cashfree Payment (₹{{ number_format($booking->amount) }})</span>
+                        </button>
+                    </form>
                 </div>
-
-                <form method="POST" action="{{ route('booking.callback') }}">
-                    @csrf
-                    <input type="hidden" name="booking_id" value="{{ $booking->id }}" />
-                    <input type="hidden" name="mock_payment" value="1" />
-                    <button type="submit" class="w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-xl shadow-[var(--theme-primary)]/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition">
-                        <i data-lucide="check-circle" class="w-4 h-4"></i>
-                        <span>Confirm & Simulate Razorpay Payment</span>
+            @else
+                <div class="pt-2 space-y-4">
+                    <button id="cf-pay-button" type="button" class="w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-xl shadow-[var(--theme-primary)]/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i>
+                        <span>Pay {{ $siteSettings['currency_symbol'] ?? '₹' }}{{ number_format($booking->amount) }} via Cashfree</span>
                     </button>
-                </form>
-            </div>
-        @else
-            <div class="pt-2">
-                <button id="rzp-button" class="w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-xl shadow-[var(--theme-primary)]/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition">
-                    <i data-lucide="credit-card" class="w-4 h-4"></i>
-                    <span>Pay {{ $siteSettings['currency_symbol'] ?? '₹' }}{{ number_format($booking->amount) }} via Razorpay</span>
-                </button>
 
-                <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-                <script>
-                    function showPaymentError(msg) {
-                        const box = document.getElementById('payment-error-box');
-                        const text = document.getElementById('payment-error-message');
-                        if (box && text) {
-                            text.textContent = msg;
-                            box.classList.remove('hidden');
-                            if (window.lucide) window.lucide.createIcons();
-                        }
-                    }
-
-                    const rzpOptions = {
-                        key: "{{ $keyId }}",
-                        amount: "{{ (int) round($booking->amount * 100) }}",
-                        currency: "INR",
-                        name: "{{ $siteSettings['site_name'] ?? 'UKVI' }}",
-                        description: "Photoshoot Booking #{{ $booking->id }} - {{ $booking->package->name ?? 'Package' }}",
-                        image: "{{ $siteSettings['hero_bg_image'] ?? '' }}",
-                        order_id: "{{ $booking->razorpay_order_id }}",
-                        prefill: {
-                            name: "{{ $booking->user->name ?? '' }}",
-                            email: "{{ $booking->user->email ?? '' }}",
-                            contact: "{{ $booking->customer_phone ?? '' }}"
-                        },
-                        theme: {
-                            color: "{{ $siteSettings['primary_color'] ?? '#E5C158' }}"
-                        },
-                        modal: {
-                            ondismiss: function() {
-                                showPaymentError('Payment window was closed before completion. You can click Pay to try again.');
+                    <!-- Cashfree Web JS SDK v3 -->
+                    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+                    <script>
+                        function showPaymentError(msg) {
+                            const box = document.getElementById('payment-error-box');
+                            const text = document.getElementById('payment-error-message');
+                            if (box && text) {
+                                text.textContent = msg;
+                                box.classList.remove('hidden');
+                                if (window.lucide) window.lucide.createIcons();
                             }
-                        },
-                        handler: function (response) {
-                            // Submit verification to backend
-                            const form = document.createElement('form');
-                            form.method = 'POST';
-                            form.action = '{{ route('booking.callback') }}';
-                            
-                            const token = document.createElement('input'); token.type = 'hidden'; token.name = '_token'; token.value = '{{ csrf_token() }}'; form.appendChild(token);
-                            const bid = document.createElement('input'); bid.type = 'hidden'; bid.name = 'booking_id'; bid.value = '{{ $booking->id }}'; form.appendChild(bid);
-                            const pid = document.createElement('input'); pid.type = 'hidden'; pid.name = 'razorpay_payment_id'; pid.value = response.razorpay_payment_id; form.appendChild(pid);
-                            const oid = document.createElement('input'); oid.type = 'hidden'; oid.name = 'razorpay_order_id'; oid.value = response.razorpay_order_id; form.appendChild(oid);
-                            const sig = document.createElement('input'); sig.type = 'hidden'; sig.name = 'razorpay_signature'; sig.value = response.razorpay_signature; form.appendChild(sig);
-                            
-                            document.body.appendChild(form);
-                            form.submit();
                         }
-                    };
 
-                    const rzp = new Razorpay(rzpOptions);
+                        const cfMode = "{{ strtolower($cashfreeEnvironment ?? 'sandbox') === 'production' ? 'production' : 'sandbox' }}";
+                        const cashfree = Cashfree({ mode: cfMode });
 
-                    rzp.on('payment.failed', function (response) {
-                        showPaymentError('Payment failed: ' + (response.error.description || response.error.reason || 'Transaction could not be completed.'));
-                    });
+                        document.getElementById('cf-pay-button').addEventListener('click', function(e) {
+                            e.preventDefault();
+                            const errorBox = document.getElementById('payment-error-box');
+                            if (errorBox) errorBox.classList.add('hidden');
 
-                    document.getElementById('rzp-button').onclick = function(e) {
-                        e.preventDefault();
-                        const errorBox = document.getElementById('payment-error-box');
-                        if (errorBox) errorBox.classList.add('hidden');
-                        rzp.open();
-                    };
-                </script>
-            </div>
+                            const sessionId = "{{ $cashfreeSessionId }}";
+                            if (!sessionId) {
+                                showPaymentError('Cashfree payment session could not be initialized. Please refresh or contact studio support.');
+                                return;
+                            }
+
+                            const checkoutOptions = {
+                                paymentSessionId: sessionId,
+                                redirectTarget: "_self", // Seamless redirect to cashfree.return on finish
+                            };
+
+                            cashfree.checkout(checkoutOptions).then((result) => {
+                                if (result.error) {
+                                    showPaymentError(result.error.message || 'Payment could not be completed.');
+                                }
+                                if (result.redirect) {
+                                    console.log('Redirecting to Cashfree Verification...');
+                                }
+                            });
+                        });
+                    </script>
+                </div>
+            @endif
+
+        @else
+            <!-- RAZORPAY GATEWAY FLOW -->
+            @if($isMock)
+                <div class="space-y-4 pt-2">
+                    <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs leading-relaxed">
+                        <strong>Sandbox / Simulation Active:</strong> Instant sandbox mode is active. Click below to simulate an immediate Razorpay capture, dispatch SMS alerts, and confirm booking.
+                    </div>
+
+                    <form method="POST" action="{{ route('booking.callback') }}">
+                        @csrf
+                        <input type="hidden" name="booking_id" value="{{ $booking->id }}" />
+                        <input type="hidden" name="mock_payment" value="1" />
+                        <button type="submit" class="w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-xl shadow-[var(--theme-primary)]/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            <span>Confirm & Simulate Razorpay Payment</span>
+                        </button>
+                    </form>
+                </div>
+            @else
+                <div class="pt-2">
+                    <button id="rzp-button" class="w-full py-4 rounded-full font-bold text-xs uppercase tracking-wider btn-gold-dynamic shadow-xl shadow-[var(--theme-primary)]/20 flex items-center justify-center gap-2 hover:scale-[1.01] transition">
+                        <i data-lucide="credit-card" class="w-4 h-4"></i>
+                        <span>Pay {{ $siteSettings['currency_symbol'] ?? '₹' }}{{ number_format($booking->amount) }} via Razorpay</span>
+                    </button>
+
+                    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+                    <script>
+                        function showPaymentError(msg) {
+                            const box = document.getElementById('payment-error-box');
+                            const text = document.getElementById('payment-error-message');
+                            if (box && text) {
+                                text.textContent = msg;
+                                box.classList.remove('hidden');
+                                if (window.lucide) window.lucide.createIcons();
+                            }
+                        }
+
+                        const rzpOptions = {
+                            key: "{{ $keyId ?? '' }}",
+                            amount: "{{ (int) round($booking->amount * 100) }}",
+                            currency: "INR",
+                            name: "{{ $siteSettings['site_name'] ?? 'Middukhera Production' }}",
+                            description: "Photoshoot Booking #{{ $booking->id }} - {{ $booking->package->name ?? 'Package' }}",
+                            image: "{{ $siteSettings['hero_bg_image'] ?? '' }}",
+                            order_id: "{{ $booking->razorpay_order_id }}",
+                            prefill: {
+                                name: "{{ $booking->user->name ?? '' }}",
+                                email: "{{ $booking->user->email ?? '' }}",
+                                contact: "{{ $booking->customer_phone ?? '' }}"
+                            },
+                            theme: {
+                                color: "{{ $siteSettings['primary_color'] ?? '#E5C158' }}"
+                            },
+                            modal: {
+                                ondismiss: function() {
+                                    showPaymentError('Payment window was closed before completion. You can click Pay to try again.');
+                                }
+                            },
+                            handler: function (response) {
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = '{{ route('booking.callback') }}';
+                                
+                                const token = document.createElement('input'); token.type = 'hidden'; token.name = '_token'; token.value = '{{ csrf_token() }}'; form.appendChild(token);
+                                const bid = document.createElement('input'); bid.type = 'hidden'; bid.name = 'booking_id'; bid.value = '{{ $booking->id }}'; form.appendChild(bid);
+                                const pid = document.createElement('input'); pid.type = 'hidden'; pid.name = 'razorpay_payment_id'; pid.value = response.razorpay_payment_id; form.appendChild(pid);
+                                const oid = document.createElement('input'); oid.type = 'hidden'; oid.name = 'razorpay_order_id'; oid.value = response.razorpay_order_id; form.appendChild(oid);
+                                const sig = document.createElement('input'); sig.type = 'hidden'; sig.name = 'razorpay_signature'; sig.value = response.razorpay_signature; form.appendChild(sig);
+                                
+                                document.body.appendChild(form);
+                                form.submit();
+                            }
+                        };
+
+                        const rzp = new Razorpay(rzpOptions);
+
+                        rzp.on('payment.failed', function (response) {
+                            showPaymentError('Payment failed: ' + (response.error.description || response.error.reason || 'Transaction could not be completed.'));
+                        });
+
+                        document.getElementById('rzp-button').onclick = function(e) {
+                            e.preventDefault();
+                            const errorBox = document.getElementById('payment-error-box');
+                            if (errorBox) errorBox.classList.add('hidden');
+                            rzp.open();
+                        };
+                    </script>
+                </div>
+            @endif
         @endif
 
         <div class="pt-4 border-t border-white/5 flex items-center justify-center gap-4 text-xs text-zinc-400">
