@@ -7,6 +7,10 @@ use App\Models\Gallery;
 use App\Models\Package;
 use App\Models\Visitor;
 use App\Models\ContactMessage;
+use App\Models\Page;
+use App\Models\Testimonial;
+use App\Models\Faq;
+use App\Models\TeamMember;
 use Illuminate\Http\Request;
 
 class FrontendController extends Controller
@@ -34,19 +38,30 @@ class FrontendController extends Controller
         $this->trackVisitor($request);
         $packages = Package::all();
         $blogs = Blog::latest()->take(3)->get();
-        $gallery = Gallery::latest()->take(6)->get();
+        $gallery = Gallery::latest()->take(8)->get();
+        $testimonials = Testimonial::where('is_featured', true)->orderBy('order')->get();
+        if ($testimonials->isEmpty()) {
+            $testimonials = Testimonial::orderBy('order')->take(6)->get();
+        }
+        $faqs = Faq::where('is_active', true)->orderBy('order')->take(6)->get();
+        $teamMembers = TeamMember::where('is_active', true)->orderBy('order')->take(4)->get();
 
         $meta_title = (config('app.name') ?: 'Middukhera Production') . ' — Luxury Photoshoot & Production House';
         $meta_description = 'Book premium photoshoot packages for weddings, fashion, portraits and events with Middukhera Production. Instant Razorpay booking.';
         $meta_image = $packages->first()->image_path ?? asset('favicon.ico');
 
-        return view('frontend.home', compact('packages', 'blogs', 'gallery', 'meta_title', 'meta_description', 'meta_image'));
+        return view('frontend.home', compact('packages', 'blogs', 'gallery', 'testimonials', 'faqs', 'teamMembers', 'meta_title', 'meta_description', 'meta_image'));
     }
 
     public function about(Request $request)
     {
         $this->trackVisitor($request);
-        return view('frontend.about');
+        $page = Page::where('slug', 'about')->first();
+        $teamMembers = TeamMember::where('is_active', true)->orderBy('order')->get();
+        $testimonials = Testimonial::where('is_featured', true)->orderBy('order')->take(3)->get();
+        $faqs = Faq::where('is_active', true)->orderBy('order')->get();
+
+        return view('frontend.about', compact('page', 'teamMembers', 'testimonials', 'faqs'));
     }
 
     public function gallery(Request $request)
@@ -62,7 +77,8 @@ class FrontendController extends Controller
     {
         $this->trackVisitor($request);
         $blogs = Blog::latest()->paginate(6);
-        return view('frontend.blog', compact('blogs'));
+        $recentBlogs = Blog::latest()->take(4)->get();
+        return view('frontend.blog', compact('blogs', 'recentBlogs'));
     }
 
     public function blogSingle($slug, Request $request)
@@ -81,7 +97,8 @@ class FrontendController extends Controller
     public function contact(Request $request)
     {
         $this->trackVisitor($request);
-        return view('frontend.contact');
+        $faqs = Faq::where('is_active', true)->orderBy('order')->take(4)->get();
+        return view('frontend.contact', compact('faqs'));
     }
 
     public function contactSubmit(Request $request)
@@ -101,30 +118,42 @@ class FrontendController extends Controller
     public function terms(Request $request)
     {
         $this->trackVisitor($request);
-        return view('frontend.terms');
+        $page = Page::where('slug', 'terms')->first();
+        return view('frontend.terms', compact('page'));
     }
 
     public function privacy(Request $request)
     {
         $this->trackVisitor($request);
-        return view('frontend.privacy');
+        $page = Page::where('slug', 'privacy')->first();
+        return view('frontend.privacy', compact('page'));
     }
 
     public function refundPolicy(Request $request)
     {
         $this->trackVisitor($request);
-        return view('frontend.refund-policy');
+        $page = Page::where('slug', 'refund-policy')->first();
+        return view('frontend.refund-policy', compact('page'));
     }
 
     public function shippingPolicy(Request $request)
     {
         $this->trackVisitor($request);
-        return view('frontend.shipping-policy');
+        $page = Page::where('slug', 'shipping-policy')->first();
+        return view('frontend.shipping-policy', compact('page'));
     }
 
     public function disclaimer(Request $request)
     {
         $this->trackVisitor($request);
-        return view('frontend.disclaimer');
+        $page = Page::where('slug', 'disclaimer')->first();
+        return view('frontend.disclaimer', compact('page'));
+    }
+
+    public function showCustomPage($slug, Request $request)
+    {
+        $this->trackVisitor($request);
+        $page = Page::where('slug', $slug)->where('is_published', true)->firstOrFail();
+        return view('frontend.custom-page', compact('page'));
     }
 }

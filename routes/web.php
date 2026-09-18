@@ -14,7 +14,7 @@ use App\Http\Controllers\VendorPackageController;
 use App\Http\Controllers\VendorRegistrationController;
 use Illuminate\Support\Facades\Route;
 
-// Public Frontend Pages (SEO & Schema Powered)
+// Public Frontend Pages (Dynamic & SEO / Schema Powered)
 Route::get('/', [FrontendController::class, 'index'])->name('home');
 Route::get('/about', [FrontendController::class, 'about'])->name('about');
 Route::get('/gallery', [FrontendController::class, 'gallery'])->name('gallery');
@@ -23,7 +23,7 @@ Route::get('/blog/{slug}', [FrontendController::class, 'blogSingle'])->name('blo
 Route::get('/contact', [FrontendController::class, 'contact'])->name('contact');
 Route::post('/contact', [FrontendController::class, 'contactSubmit'])->name('contact.submit');
 
-// Legal & Compliance Policies (Mandatory for Razorpay Approval)
+// Legal & Compliance Policies (Dynamic with Razorpay & Cashfree Compliance)
 Route::get('/terms', [FrontendController::class, 'terms'])->name('terms');
 Route::get('/terms-and-conditions', [FrontendController::class, 'terms'])->name('terms.alias');
 Route::get('/privacy', [FrontendController::class, 'privacy'])->name('privacy');
@@ -33,6 +33,9 @@ Route::get('/cancellation-and-refund-policy', [FrontendController::class, 'refun
 Route::get('/shipping-policy', [FrontendController::class, 'shippingPolicy'])->name('shipping-policy');
 Route::get('/shipping-and-delivery', [FrontendController::class, 'shippingPolicy'])->name('shipping-policy.alias');
 Route::get('/disclaimer', [FrontendController::class, 'disclaimer'])->name('disclaimer');
+
+// Dynamic Custom Pages
+Route::get('/page/{slug}', [FrontendController::class, 'showCustomPage'])->name('custom.page');
 
 // Booking & Checkout Flow
 Route::get('/package/{slug}/checkout', [BookingController::class, 'checkout'])->name('booking.checkout');
@@ -70,7 +73,7 @@ Route::prefix('vendor')->middleware(['auth'])->group(function () {
     Route::delete('/packages/{package}', [VendorPackageController::class, 'destroy'])->name('vendor.packages.destroy');
 });
 
-// Super Admin Management & Theme Customizer
+// Super Admin Management, Dynamic CMS, Media Library & Theme Customizer
 Route::prefix('admin')->middleware(['auth', \App\Http\Middleware\EnsureAdmin::class])->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
     
@@ -79,6 +82,30 @@ Route::prefix('admin')->middleware(['auth', \App\Http\Middleware\EnsureAdmin::cl
     Route::post('/settings/theme-preset', [AdminDashboardController::class, 'applyThemePreset'])->name('admin.settings.preset');
     Route::post('/sms/test', [AdminDashboardController::class, 'testSms'])->name('admin.sms.test');
     
+    // Media Library & Upload Center
+    Route::post('/media/upload', [AdminDashboardController::class, 'uploadMedia'])->name('admin.media.upload');
+    Route::delete('/media/{media}', [AdminDashboardController::class, 'deleteMedia'])->name('admin.media.delete');
+
+    // Dynamic Pages & Legal Policies
+    Route::post('/pages', [AdminDashboardController::class, 'storePage'])->name('admin.pages.store');
+    Route::patch('/pages/{page}', [AdminDashboardController::class, 'updatePage'])->name('admin.pages.update');
+    Route::delete('/pages/{page}', [AdminDashboardController::class, 'deletePage'])->name('admin.pages.delete');
+
+    // Testimonials & Reviews
+    Route::post('/testimonials', [AdminDashboardController::class, 'storeTestimonial'])->name('admin.testimonials.store');
+    Route::patch('/testimonials/{testimonial}', [AdminDashboardController::class, 'updateTestimonial'])->name('admin.testimonials.update');
+    Route::delete('/testimonials/{testimonial}', [AdminDashboardController::class, 'deleteTestimonial'])->name('admin.testimonials.delete');
+
+    // FAQs Management
+    Route::post('/faqs', [AdminDashboardController::class, 'storeFaq'])->name('admin.faqs.store');
+    Route::patch('/faqs/{faq}', [AdminDashboardController::class, 'updateFaq'])->name('admin.faqs.update');
+    Route::delete('/faqs/{faq}', [AdminDashboardController::class, 'deleteFaq'])->name('admin.faqs.delete');
+
+    // Team Members & Crew
+    Route::post('/team', [AdminDashboardController::class, 'storeTeamMember'])->name('admin.team.store');
+    Route::patch('/team/{teamMember}', [AdminDashboardController::class, 'updateTeamMember'])->name('admin.team.update');
+    Route::delete('/team/{teamMember}', [AdminDashboardController::class, 'deleteTeamMember'])->name('admin.team.delete');
+
     // Bookings Management
     Route::post('/booking/{booking}/status', [AdminDashboardController::class, 'updateBookingStatus'])->name('admin.booking.updateStatus');
     Route::delete('/booking/{booking}', [AdminDashboardController::class, 'deleteBooking'])->name('admin.booking.delete');
@@ -90,10 +117,12 @@ Route::prefix('admin')->middleware(['auth', \App\Http\Middleware\EnsureAdmin::cl
 
     // Blog Management
     Route::post('/blog', [AdminDashboardController::class, 'storeBlog'])->name('admin.blog.store');
+    Route::patch('/blog/{blog}', [AdminDashboardController::class, 'updateBlog'])->name('admin.blog.update');
     Route::delete('/blog/{blog}', [AdminDashboardController::class, 'deleteBlog'])->name('admin.blog.delete');
 
     // Gallery Management
     Route::post('/gallery', [AdminDashboardController::class, 'storeGallery'])->name('admin.gallery.store');
+    Route::patch('/gallery/{gallery}', [AdminDashboardController::class, 'updateGallery'])->name('admin.gallery.update');
     Route::delete('/gallery/{gallery}', [AdminDashboardController::class, 'deleteGallery'])->name('admin.gallery.delete');
 
     // Vendor Partners Management

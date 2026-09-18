@@ -45,7 +45,7 @@
                 <div class="pt-4 flex items-center justify-center lg:justify-start gap-6 text-xs text-zinc-400">
                     <span class="flex items-center gap-1.5">
                         <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
-                        <span>Razorpay Verified Gateway</span>
+                        <span>Instant Gateway Booking</span>
                     </span>
                     <span class="flex items-center gap-1.5">
                         <i data-lucide="award" class="w-4 h-4 text-theme-primary"></i>
@@ -175,7 +175,7 @@
                 <span class="text-xs font-bold uppercase tracking-widest text-theme-primary">Transparent Studio Pricing</span>
                 <h2 class="font-serif text-3xl sm:text-4xl font-bold text-white mt-2">Curated Signature Packages</h2>
                 <div class="w-16 h-0.5 bg-theme-primary mx-auto mt-4 mb-4"></div>
-                <p class="text-zinc-400 text-sm leading-relaxed">Select your desired tier and reserve seamlessly with instant Razorpay booking confirmation.</p>
+                <p class="text-zinc-400 text-sm leading-relaxed">Select your desired tier and reserve seamlessly with instant online booking confirmation.</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -254,8 +254,8 @@
                 </a>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                @foreach($gallery->take(6) as $idx => $gItem)
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                @foreach($gallery->take(8) as $idx => $gItem)
                     <div class="site-card hover-zoom-img-parent rounded-2xl overflow-hidden border border-white/10 group aspect-[3/4] relative reveal" style="transition-delay: {{ $idx * 60 }}ms">
                         <img src="{{ $gItem->image_path }}" alt="{{ $gItem->title }}" class="w-full h-full object-cover hover-zoom-img">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-4 flex flex-col justify-end">
@@ -268,31 +268,13 @@
         </div>
     </section>
 
-    <!-- 6. CLIENT TESTIMONIALS (Alpine.js Slider) -->
+    <!-- 6. DYNAMIC CLIENT TESTIMONIALS (Alpine.js Slider from Testimonial Model) -->
+    @if(isset($testimonials) && $testimonials->count() > 0)
     <section class="py-24 relative z-10" x-data="{
         active: 0,
-        reviews: [
-            {
-                quote: 'Middukhera Studio exceeded our wildest expectations. The high-fashion lighting direction and medium-format image clarity produced imagery worthy of Vogue. An absolute triumph.',
-                name: 'Natasha Oberoi',
-                title: 'High-Fashion Designer & Creative Director',
-                avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200'
-            },
-            {
-                quote: 'We booked the Royal Wedding package. The candid documentation captured emotional tears, jewelry brilliance, and celebratory fireworks in cinematic perfection. We cherish these archives forever.',
-                name: 'Aditya & Tara Kapoor',
-                title: 'Private Destination Wedding, Udaipur Palace',
-                avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200'
-            },
-            {
-                quote: 'The executive portraits done for our tech leadership team delivered flawless corporate authority while remaining deeply modern and approachable. Turnaround was lightning fast.',
-                name: 'Karan Mehra',
-                title: 'Managing Partner, Apex Capital Partners',
-                avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=200'
-            }
-        ],
-        next() { this.active = (this.active + 1) % this.reviews.length },
-        prev() { this.active = (this.active - 1 + this.reviews.length) % this.reviews.length }
+        total: {{ $testimonials->count() }},
+        next() { this.active = (this.active + 1) % this.total },
+        prev() { this.active = (this.active - 1 + this.total) % this.total }
     }">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center reveal">
             <span class="text-xs font-bold uppercase tracking-widest text-theme-primary">Client Experiences</span>
@@ -303,37 +285,49 @@
                 <!-- Quotation Mark Icon -->
                 <i data-lucide="quote" class="w-12 h-12 text-theme-primary opacity-20 mx-auto mb-6"></i>
 
-                <template x-for="(rev, i) in reviews" :key="i">
-                    <div x-show="active === i" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-6">
-                        <p class="text-lg sm:text-xl font-serif text-zinc-200 leading-relaxed italic max-w-3xl mx-auto" x-text="'&ldquo;' + rev.quote + '&rdquo;'"></p>
+                @foreach($testimonials as $idx => $review)
+                    <div x-show="active === {{ $idx }}" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" class="space-y-6">
+                        <p class="text-lg sm:text-xl font-serif text-zinc-200 leading-relaxed italic max-w-3xl mx-auto">
+                            &ldquo;{{ $review->content }}&rdquo;
+                        </p>
                         
-                        <div class="flex items-center justify-center gap-4 pt-4">
-                            <img :src="rev.avatar" :alt="rev.name" class="w-12 h-12 rounded-full object-cover border-2 border-[var(--theme-primary)]">
+                        <!-- Star Rating -->
+                        <div class="flex items-center justify-center gap-1 text-amber-400">
+                            @for($s = 0; $s < ($review->rating ?? 5); $s++)
+                                <i data-lucide="star" class="w-4 h-4 fill-amber-400"></i>
+                            @endfor
+                        </div>
+
+                        <div class="flex items-center justify-center gap-4 pt-2">
+                            <img src="{{ $review->avatar_path ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200' }}" alt="{{ $review->client_name }}" class="w-12 h-12 rounded-full object-cover border-2 border-[var(--theme-primary)]">
                             <div class="text-left">
-                                <div class="font-bold text-white text-sm" x-text="rev.name"></div>
-                                <div class="text-xs text-zinc-400" x-text="rev.title"></div>
+                                <div class="font-bold text-white text-sm">{{ $review->client_name }}</div>
+                                <div class="text-xs text-zinc-400">{{ $review->client_role ?? ($review->event_type ?? 'Private Client') }}</div>
                             </div>
                         </div>
                     </div>
-                </template>
+                @endforeach
 
                 <!-- Navigation Controls -->
+                @if($testimonials->count() > 1)
                 <div class="flex items-center justify-center gap-4 mt-8 pt-6 border-t border-white/5">
                     <button @click="prev()" class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center transition">
                         <i data-lucide="chevron-left" class="w-4 h-4"></i>
                     </button>
                     <div class="flex gap-2">
-                        <template x-for="(rev, i) in reviews" :key="i">
-                            <button @click="active = i" :class="active === i ? 'w-6 bg-[var(--theme-primary)]' : 'w-2 bg-white/20'" class="h-2 rounded-full transition-all duration-300"></button>
-                        </template>
+                        @foreach($testimonials as $idx => $review)
+                            <button @click="active = {{ $idx }}" :class="active === {{ $idx }} ? 'w-6 bg-[var(--theme-primary)]' : 'w-2 bg-white/20'" class="h-2 rounded-full transition-all duration-300"></button>
+                        @endforeach
                     </div>
                     <button @click="next()" class="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white flex items-center justify-center transition">
                         <i data-lucide="chevron-right" class="w-4 h-4"></i>
                     </button>
                 </div>
+                @endif
             </div>
         </div>
     </section>
+    @endif
 
     <!-- 7. DYNAMIC JOURNAL / BLOG HIGHLIGHTS -->
     <section class="py-20 border-y border-white/5 relative z-10">
@@ -376,7 +370,8 @@
         </div>
     </section>
 
-    <!-- 8. FREQUENTLY ASKED QUESTIONS ACCORDION -->
+    <!-- 8. FREQUENTLY ASKED QUESTIONS ACCORDION (Dynamic from Faq Model) -->
+    @if(isset($faqs) && $faqs->count() > 0)
     <section class="py-20 relative z-10" x-data="{ openFaq: null }">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 reveal">
             <div class="text-center mb-12">
@@ -386,41 +381,21 @@
             </div>
 
             <div class="space-y-4">
-                <!-- FAQ 1 -->
-                <div class="site-card rounded-2xl border border-white/10 overflow-hidden">
-                    <button @click="openFaq = openFaq === 1 ? null : 1" class="w-full p-5 text-left flex items-center justify-between font-semibold text-white text-sm">
-                        <span>How do I reserve a photoshoot session?</span>
-                        <i data-lucide="chevron-down" :class="openFaq === 1 ? 'rotate-180' : ''" class="w-4 h-4 text-theme-primary transition-transform"></i>
-                    </button>
-                    <div x-show="openFaq === 1" x-collapse class="px-5 pb-5 text-xs text-zinc-400 leading-relaxed border-t border-white/5 pt-3">
-                        Select your preferred package from our signature tiers, click "Reserve Session", choose your desired date, and complete your secure deposit via Razorpay. Our concierge will contact you within 24 hours to schedule your creative briefing.
+                @foreach($faqs as $idx => $faq)
+                    <div class="site-card rounded-2xl border border-white/10 overflow-hidden">
+                        <button @click="openFaq = (openFaq === {{ $idx }} ? null : {{ $idx }})" class="w-full p-5 text-left flex items-center justify-between font-semibold text-white text-sm">
+                            <span>{{ $faq->question }}</span>
+                            <i data-lucide="chevron-down" :class="openFaq === {{ $idx }} ? 'rotate-180' : ''" class="w-4 h-4 text-theme-primary transition-transform duration-200"></i>
+                        </button>
+                        <div x-show="openFaq === {{ $idx }}" x-collapse class="px-5 pb-5 text-xs text-zinc-400 leading-relaxed border-t border-white/5 pt-3">
+                            {{ $faq->answer }}
+                        </div>
                     </div>
-                </div>
-
-                <!-- FAQ 2 -->
-                <div class="site-card rounded-2xl border border-white/10 overflow-hidden">
-                    <button @click="openFaq = openFaq === 2 ? null : 2" class="w-full p-5 text-left flex items-center justify-between font-semibold text-white text-sm">
-                        <span>What is your typical delivery turnaround for edited photos?</span>
-                        <i data-lucide="chevron-down" :class="openFaq === 2 ? 'rotate-180' : ''" class="w-4 h-4 text-theme-primary transition-transform"></i>
-                    </button>
-                    <div x-show="openFaq === 2" x-collapse class="px-5 pb-5 text-xs text-zinc-400 leading-relaxed border-t border-white/5 pt-3">
-                        Initial preview contact sheets are delivered within 48 to 72 hours. Fully color-graded, high-fidelity retouched master plates are completed within 7 to 14 business days, accessible directly from your personal Client Dashboard.
-                    </div>
-                </div>
-
-                <!-- FAQ 3 -->
-                <div class="site-card rounded-2xl border border-white/10 overflow-hidden">
-                    <button @click="openFaq = openFaq === 3 ? null : 3" class="w-full p-5 text-left flex items-center justify-between font-semibold text-white text-sm">
-                        <span>Can I reschedule my session if needed?</span>
-                        <i data-lucide="chevron-down" :class="openFaq === 3 ? 'rotate-180' : ''" class="w-4 h-4 text-theme-primary transition-transform"></i>
-                    </button>
-                    <div x-show="openFaq === 3" x-collapse class="px-5 pb-5 text-xs text-zinc-400 leading-relaxed border-t border-white/5 pt-3">
-                        Yes, sessions may be rescheduled up to 5 days prior to your booking date without penalty. Please notify our concierge via phone or WhatsApp to select a new convenient studio slot.
-                    </div>
-                </div>
+                @endforeach
             </div>
         </div>
     </section>
+    @endif
 
     <!-- 9. FINAL HIGH-CONVERTING CTA BANNER -->
     <section class="py-20 relative z-10">

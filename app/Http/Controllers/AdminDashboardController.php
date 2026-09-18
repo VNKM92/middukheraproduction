@@ -15,6 +15,12 @@ use App\Models\User;
 use App\Models\Transaction;
 use App\Models\SmsLog;
 use App\Models\WebhookLog;
+use App\Models\Page;
+use App\Models\Testimonial;
+use App\Models\Faq;
+use App\Models\TeamMember;
+use App\Models\MediaFile;
+use App\Services\UploadService;
 use App\Services\Sms\SmsManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -44,11 +50,19 @@ class AdminDashboardController extends Controller
         $vendors = Vendor::with('user')->latest()->get();
         $users = User::latest()->take(20)->get();
 
+        // Dynamic CMS & Media Content
+        $pages = Page::latest()->get();
+        $testimonials = Testimonial::orderBy('order')->latest()->get();
+        $faqs = Faq::orderBy('order')->get();
+        $teamMembers = TeamMember::orderBy('order')->get();
+        $mediaFiles = MediaFile::latest()->get();
+
         $allSettings = Setting::getAllAsArray();
 
         return view('admin.dashboard', compact(
             'totalEarnings',
             'totalBookings',
+            'totalPendingBookings',
             'totalVisitors',
             'totalPackages',
             'totalVendors',
@@ -64,16 +78,42 @@ class AdminDashboardController extends Controller
             'packages',
             'vendors',
             'users',
+            'pages',
+            'testimonials',
+            'faqs',
+            'teamMembers',
+            'mediaFiles',
             'allSettings'
         ));
     }
 
     /**
-     * Update Site & Theme Settings
+     * Update Site & Theme Settings with File Upload Support
      */
     public function saveSettings(Request $request)
     {
-        $data = $request->except(['_token', 'theme_preset']);
+        $data = $request->except(['_token', 'theme_preset', 'site_logo_file', 'site_favicon_file', 'hero_bg_image_file', 'about_banner_file']);
+
+        // Handle File Uploads for branding and banners
+        if ($request->hasFile('site_logo_file')) {
+            $upload = UploadService::upload($request->file('site_logo_file'), 'settings');
+            $data['site_logo'] = $upload['url'];
+        }
+
+        if ($request->hasFile('site_favicon_file')) {
+            $upload = UploadService::upload($request->file('site_favicon_file'), 'settings');
+            $data['site_favicon'] = $upload['url'];
+        }
+
+        if ($request->hasFile('hero_bg_image_file')) {
+            $upload = UploadService::upload($request->file('hero_bg_image_file'), 'settings');
+            $data['hero_bg_image'] = $upload['url'];
+        }
+
+        if ($request->hasFile('about_banner_file')) {
+            $upload = UploadService::upload($request->file('about_banner_file'), 'settings');
+            $data['about_banner_image'] = $upload['url'];
+        }
 
         foreach ($data as $key => $value) {
             Setting::set($key, $value);
@@ -81,7 +121,7 @@ class AdminDashboardController extends Controller
 
         Setting::clearCache();
 
-        return redirect()->back()->with('success', 'Site settings & theme colors saved successfully!');
+        return redirect()->back()->with('success', 'Site settings, media assets & theme configuration updated successfully!');
     }
 
     /**
@@ -100,13 +140,9 @@ class AdminDashboardController extends Controller
         $result = SmsManager::dispatch(
             phone: $request->test_phone,
             message: $request->test_message,
-            // message: 'sms_2fa',
             templateKey: 'admin_test',
             overrideDriver: $testDriver
         );
-
-
-        //dd($result);
 
         if ($result['success']) {
             $driverUsed = $result['driver_used'] ?? ($testDriver ?: Setting::get('sms_driver', 'auto'));
@@ -197,24 +233,335 @@ class AdminDashboardController extends Controller
         return redirect()->back()->with('error', 'Preset not recognized.');
     }
 
-    public function updateBookingStatus(Request $request, Booking $booking)
+    // ==========================================
+    // 1. MEDIA LIBRARY & UPLOAD CENTER (ADVANCE)
+    // ==========================================
+
+    public function uploadMedia(Request $request)
     {
         $request->validate([
-            'status' => 'required|in:pending,progress,active,next_level,completed,cancelled',
+            'folder' => 'nullable|string|max:50',
+            'file' => 'nullable|file|max:20480',
+            'files.*' => 'nullable|file|max:20480',
         ]);
 
-        $booking->update([
-            'status' => $request->status,
-        ]);
+        $folder = $request->input('folder', 'general');
+        $uploadedCount = 0;
 
-        return redirect()->back()->with('success', 'Booking status updated to ' . ucfirst($request->status) . ' successfully.');
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                UploadService::upload($file, $folder);
+                $uploadedCount++;
+            }
+        } elseif ($request->hasFile('file')) {
+            UploadService::upload($request->file('file'), $folder);
+            $uploadedCount++;
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "{$uploadedCount} file(s) uploaded successfully.",
+            ]);
+        }
+
+        return redirect()->back()->with('success', "{$uploadedCount} media file(s) uploaded to {$folder} library successfully.");
     }
 
-    public function deleteBooking(Booking $booking)
+    public function deleteMedia(MediaFile $media)
     {
-        $booking->delete();
-        return redirect()->back()->with('success', 'Booking record deleted successfully.');
+        UploadService::delete($media);
+        return redirect()->back()->with('success', 'Media file permanently deleted.');
     }
+
+    // ==========================================
+    // 2. DYNAMIC PAGES & POLICIES CRUD
+    // ==========================================
+
+    public function storePage(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:pages,slug',
+            'subtitle' => 'nullable|string|max:255',
+            'content' => 'nullable|string',
+            'banner_image_url' => 'nullable|url',
+            'banner_image' => 'nullable|image|max:10240',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string',
+            'meta_keywords' => 'nullable|string',
+        ]);
+
+        $bannerPath = $request->banner_image_url;
+        if ($request->hasFile('banner_image')) {
+            $upload = UploadService::upload($request->file('banner_image'), 'pages');
+            $bannerPath = $upload['url'];
+        }
+
+        Page::create([
+            'title' => $request->title,
+            'slug' => Str::slug($request->slug),
+            'subtitle' => $request->subtitle,
+            'content' => $request->content,
+            'banner_image' => $bannerPath,
+            'meta_title' => $request->meta_title ?? $request->title,
+            'meta_description' => $request->meta_description,
+            'meta_keywords' => $request->meta_keywords,
+            'is_published' => $request->boolean('is_published', true),
+        ]);
+
+        return redirect()->back()->with('success', "Page [{$request->title}] created successfully.");
+    }
+
+    public function updatePage(Request $request, Page $page)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:pages,slug,' . $page->id,
+            'subtitle' => 'nullable|string|max:255',
+            'content' => 'nullable|string',
+            'banner_image_url' => 'nullable|url',
+            'banner_image' => 'nullable|image|max:10240',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string',
+            'meta_keywords' => 'nullable|string',
+        ]);
+
+        $bannerPath = $page->banner_image;
+        if ($request->hasFile('banner_image')) {
+            $upload = UploadService::upload($request->file('banner_image'), 'pages');
+            $bannerPath = $upload['url'];
+        } elseif ($request->filled('banner_image_url')) {
+            $bannerPath = $request->banner_image_url;
+        }
+
+        $page->update([
+            'title' => $request->title,
+            'slug' => Str::slug($request->slug),
+            'subtitle' => $request->subtitle,
+            'content' => $request->content,
+            'banner_image' => $bannerPath,
+            'meta_title' => $request->meta_title,
+            'meta_description' => $request->meta_description,
+            'meta_keywords' => $request->meta_keywords,
+            'is_published' => $request->boolean('is_published', true),
+        ]);
+
+        return redirect()->back()->with('success', "Page [{$page->title}] updated successfully.");
+    }
+
+    public function deletePage(Page $page)
+    {
+        $title = $page->title;
+        $page->delete();
+        return redirect()->back()->with('success', "Page [{$title}] deleted successfully.");
+    }
+
+    // ==========================================
+    // 3. TESTIMONIALS & REVIEWS CRUD
+    // ==========================================
+
+    public function storeTestimonial(Request $request)
+    {
+        $request->validate([
+            'client_name' => 'required|string|max:255',
+            'client_role' => 'nullable|string|max:255',
+            'avatar_url' => 'nullable|url',
+            'avatar' => 'nullable|image|max:5120',
+            'rating' => 'required|integer|min:1|max:5',
+            'content' => 'required|string',
+            'event_type' => 'nullable|string|max:255',
+            'order' => 'nullable|integer',
+        ]);
+
+        $avatarPath = $request->avatar_url;
+        if ($request->hasFile('avatar')) {
+            $upload = UploadService::upload($request->file('avatar'), 'testimonials');
+            $avatarPath = $upload['url'];
+        }
+
+        Testimonial::create([
+            'client_name' => $request->client_name,
+            'client_role' => $request->client_role,
+            'avatar_path' => $avatarPath ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300',
+            'rating' => $request->rating,
+            'content' => $request->content,
+            'event_type' => $request->event_type,
+            'is_featured' => $request->boolean('is_featured', true),
+            'order' => $request->input('order', 0),
+        ]);
+
+        return redirect()->back()->with('success', 'Testimonial added successfully.');
+    }
+
+    public function updateTestimonial(Request $request, Testimonial $testimonial)
+    {
+        $request->validate([
+            'client_name' => 'required|string|max:255',
+            'client_role' => 'nullable|string|max:255',
+            'avatar_url' => 'nullable|url',
+            'avatar' => 'nullable|image|max:5120',
+            'rating' => 'required|integer|min:1|max:5',
+            'content' => 'required|string',
+            'event_type' => 'nullable|string|max:255',
+            'order' => 'nullable|integer',
+        ]);
+
+        $avatarPath = $testimonial->avatar_path;
+        if ($request->hasFile('avatar')) {
+            $upload = UploadService::upload($request->file('avatar'), 'testimonials');
+            $avatarPath = $upload['url'];
+        } elseif ($request->filled('avatar_url')) {
+            $avatarPath = $request->avatar_url;
+        }
+
+        $testimonial->update([
+            'client_name' => $request->client_name,
+            'client_role' => $request->client_role,
+            'avatar_path' => $avatarPath,
+            'rating' => $request->rating,
+            'content' => $request->content,
+            'event_type' => $request->event_type,
+            'is_featured' => $request->boolean('is_featured', true),
+            'order' => $request->input('order', 0),
+        ]);
+
+        return redirect()->back()->with('success', 'Testimonial updated successfully.');
+    }
+
+    public function deleteTestimonial(Testimonial $testimonial)
+    {
+        $testimonial->delete();
+        return redirect()->back()->with('success', 'Testimonial deleted successfully.');
+    }
+
+    // ==========================================
+    // 4. FAQS (FREQUENTLY ASKED QUESTIONS) CRUD
+    // ==========================================
+
+    public function storeFaq(Request $request)
+    {
+        $request->validate([
+            'question' => 'required|string|max:255',
+            'answer' => 'required|string',
+            'category' => 'required|string|max:50',
+            'order' => 'nullable|integer',
+        ]);
+
+        Faq::create([
+            'question' => $request->question,
+            'answer' => $request->answer,
+            'category' => $request->category,
+            'order' => $request->input('order', 0),
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        return redirect()->back()->with('success', 'FAQ added successfully.');
+    }
+
+    public function updateFaq(Request $request, Faq $faq)
+    {
+        $request->validate([
+            'question' => 'required|string|max:255',
+            'answer' => 'required|string',
+            'category' => 'required|string|max:50',
+            'order' => 'nullable|integer',
+        ]);
+
+        $faq->update([
+            'question' => $request->question,
+            'answer' => $request->answer,
+            'category' => $request->category,
+            'order' => $request->input('order', 0),
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        return redirect()->back()->with('success', 'FAQ updated successfully.');
+    }
+
+    public function deleteFaq(Faq $faq)
+    {
+        $faq->delete();
+        return redirect()->back()->with('success', 'FAQ deleted successfully.');
+    }
+
+    // ==========================================
+    // 5. TEAM MEMBERS & CREW CRUD
+    // ==========================================
+
+    public function storeTeamMember(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'role' => 'required|string|max:255',
+            'bio' => 'nullable|string',
+            'image_url' => 'nullable|url',
+            'image' => 'nullable|image|max:5120',
+            'instagram_url' => 'nullable|url',
+            'order' => 'nullable|integer',
+        ]);
+
+        $imagePath = $request->image_url;
+        if ($request->hasFile('image')) {
+            $upload = UploadService::upload($request->file('image'), 'team');
+            $imagePath = $upload['url'];
+        }
+
+        TeamMember::create([
+            'name' => $request->name,
+            'role' => $request->role,
+            'bio' => $request->bio,
+            'image_path' => $imagePath ?? 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
+            'instagram_url' => $request->instagram_url,
+            'order' => $request->input('order', 0),
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        return redirect()->back()->with('success', 'Team member added successfully.');
+    }
+
+    public function updateTeamMember(Request $request, TeamMember $teamMember)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'role' => 'required|string|max:255',
+            'bio' => 'nullable|string',
+            'image_url' => 'nullable|url',
+            'image' => 'nullable|image|max:5120',
+            'instagram_url' => 'nullable|url',
+            'order' => 'nullable|integer',
+        ]);
+
+        $imagePath = $teamMember->image_path;
+        if ($request->hasFile('image')) {
+            $upload = UploadService::upload($request->file('image'), 'team');
+            $imagePath = $upload['url'];
+        } elseif ($request->filled('image_url')) {
+            $imagePath = $request->image_url;
+        }
+
+        $teamMember->update([
+            'name' => $request->name,
+            'role' => $request->role,
+            'bio' => $request->bio,
+            'image_path' => $imagePath,
+            'instagram_url' => $request->instagram_url,
+            'order' => $request->input('order', 0),
+            'is_active' => $request->boolean('is_active', true),
+        ]);
+
+        return redirect()->back()->with('success', 'Team member updated successfully.');
+    }
+
+    public function deleteTeamMember(TeamMember $teamMember)
+    {
+        $teamMember->delete();
+        return redirect()->back()->with('success', 'Team member deleted successfully.');
+    }
+
+    // ==========================================
+    // 6. ENHANCED BLOG / JOURNAL CRUD
+    // ==========================================
 
     public function storeBlog(Request $request)
     {
@@ -223,20 +570,64 @@ class AdminDashboardController extends Controller
             'excerpt' => 'required|string|max:500',
             'content' => 'required|string',
             'image_url' => 'nullable|url',
+            'image' => 'nullable|image|max:10240',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string',
+            'meta_keywords' => 'nullable|string',
         ]);
+
+        $imagePath = $request->image_url ?? null;
+        if ($request->hasFile('image')) {
+            $upload = UploadService::upload($request->file('image'), 'blogs');
+            $imagePath = $upload['url'];
+        }
 
         Blog::create([
             'title' => $request->title,
             'slug' => Str::slug($request->title) . '-' . uniqid(),
             'excerpt' => $request->excerpt,
             'content' => $request->content,
-            'image_path' => $request->image_url ?? 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800',
-            'meta_title' => $request->title . ' | Lumina Studio',
-            'meta_description' => $request->excerpt,
-            'meta_keywords' => 'photoshoot, studio, photography, portfolio',
+            'image_path' => $imagePath ?? 'https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800',
+            'meta_title' => $request->meta_title ?? ($request->title . ' | Studio Journal'),
+            'meta_description' => $request->meta_description ?? $request->excerpt,
+            'meta_keywords' => $request->meta_keywords ?? 'photoshoot, studio, photography, portfolio',
         ]);
 
         return redirect()->back()->with('success', 'Blog article published successfully.');
+    }
+
+    public function updateBlog(Request $request, Blog $blog)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'excerpt' => 'required|string|max:500',
+            'content' => 'required|string',
+            'image_url' => 'nullable|url',
+            'image' => 'nullable|image|max:10240',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string',
+            'meta_keywords' => 'nullable|string',
+        ]);
+
+        $imagePath = $blog->image_path;
+        if ($request->hasFile('image')) {
+            $upload = UploadService::upload($request->file('image'), 'blogs');
+            $imagePath = $upload['url'];
+        } elseif ($request->filled('image_url')) {
+            $imagePath = $request->image_url;
+        }
+
+        $blog->update([
+            'title' => $request->title,
+            'excerpt' => $request->excerpt,
+            'content' => $request->content,
+            'image_path' => $imagePath,
+            'meta_title' => $request->meta_title,
+            'meta_description' => $request->meta_description,
+            'meta_keywords' => $request->meta_keywords,
+        ]);
+
+        return redirect()->back()->with('success', 'Blog article updated successfully.');
     }
 
     public function deleteBlog(Blog $blog)
@@ -245,19 +636,23 @@ class AdminDashboardController extends Controller
         return redirect()->back()->with('success', 'Blog article deleted successfully.');
     }
 
+    // ==========================================
+    // 7. ENHANCED GALLERY CRUD
+    // ==========================================
+
     public function storeGallery(Request $request)
     {
         $request->validate([
             'title' => 'required|string|max:255',
             'category' => 'required|string',
             'image_url' => 'nullable|url',
-            'image' => 'nullable|image|max:5120',
+            'image' => 'nullable|image|max:10240',
         ]);
 
         $imagePath = $request->image_url ?? null;
         if ($request->hasFile('image')) {
-            $stored = $request->file('image')->store('uploads', 'public');
-            $imagePath = \Illuminate\Support\Facades\Storage::url($stored);
+            $upload = UploadService::upload($request->file('image'), 'gallery');
+            $imagePath = $upload['url'];
         }
 
         if (!$imagePath) {
@@ -273,11 +668,41 @@ class AdminDashboardController extends Controller
         return redirect()->back()->with('success', 'Gallery item uploaded successfully.');
     }
 
+    public function updateGallery(Request $request, Gallery $gallery)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'category' => 'required|string',
+            'image_url' => 'nullable|url',
+            'image' => 'nullable|image|max:10240',
+        ]);
+
+        $imagePath = $gallery->image_path;
+        if ($request->hasFile('image')) {
+            $upload = UploadService::upload($request->file('image'), 'gallery');
+            $imagePath = $upload['url'];
+        } elseif ($request->filled('image_url')) {
+            $imagePath = $request->image_url;
+        }
+
+        $gallery->update([
+            'title' => $request->title,
+            'category' => $request->category,
+            'image_path' => $imagePath,
+        ]);
+
+        return redirect()->back()->with('success', 'Gallery item updated successfully.');
+    }
+
     public function deleteGallery(Gallery $gallery)
     {
         $gallery->delete();
         return redirect()->back()->with('success', 'Gallery item removed successfully.');
     }
+
+    // ==========================================
+    // 8. PRICING PACKAGES CRUD
+    // ==========================================
 
     public function storePackage(Request $request)
     {
@@ -286,17 +711,17 @@ class AdminDashboardController extends Controller
             'price_min' => 'required|numeric|min:0',
             'price_max' => 'required|numeric|gte:price_min',
             'description' => 'required|string',
-            'features' => 'required|string', // comma or newline separated
+            'features' => 'required|string',
             'image_url' => 'nullable|url',
-            'image' => 'nullable|image|max:5120',
+            'image' => 'nullable|image|max:10240',
         ]);
 
         $featuresArray = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $request->features))));
 
         $imagePath = $request->image_url ?? null;
         if ($request->hasFile('image')) {
-            $stored = $request->file('image')->store('uploads', 'public');
-            $imagePath = \Illuminate\Support\Facades\Storage::url($stored);
+            $upload = UploadService::upload($request->file('image'), 'packages');
+            $imagePath = $upload['url'];
         }
 
         Package::create([
@@ -321,15 +746,15 @@ class AdminDashboardController extends Controller
             'description' => 'required|string',
             'features' => 'required|string',
             'image_url' => 'nullable|url',
-            'image' => 'nullable|image|max:5120',
+            'image' => 'nullable|image|max:10240',
         ]);
 
         $featuresArray = array_values(array_filter(array_map('trim', preg_split('/[\r\n,]+/', $request->features))));
 
         $imagePath = $package->image_path;
         if ($request->hasFile('image')) {
-            $stored = $request->file('image')->store('uploads', 'public');
-            $imagePath = \Illuminate\Support\Facades\Storage::url($stored);
+            $upload = UploadService::upload($request->file('image'), 'packages');
+            $imagePath = $upload['url'];
         } elseif ($request->filled('image_url')) {
             $imagePath = $request->image_url;
         }
@@ -352,6 +777,29 @@ class AdminDashboardController extends Controller
         return redirect()->back()->with('success', 'Package deleted successfully.');
     }
 
+    // ==========================================
+    // 9. BOOKINGS & INQUIRIES & VENDORS
+    // ==========================================
+
+    public function updateBookingStatus(Request $request, Booking $booking)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,progress,active,next_level,completed,cancelled',
+        ]);
+
+        $booking->update([
+            'status' => $request->status,
+        ]);
+
+        return redirect()->back()->with('success', 'Booking status updated to ' . ucfirst($request->status) . ' successfully.');
+    }
+
+    public function deleteBooking(Booking $booking)
+    {
+        $booking->delete();
+        return redirect()->back()->with('success', 'Booking record deleted successfully.');
+    }
+
     public function updateVendorStatus(Request $request, Vendor $vendor)
     {
         $request->validate([
@@ -371,6 +819,12 @@ class AdminDashboardController extends Controller
     {
         $message->update(['status' => 'read']);
         return redirect()->back()->with('success', 'Message marked as read.');
+    }
+
+    public function vendorsList()
+    {
+        $vendors = Vendor::with('user')->latest()->get();
+        return view('admin.vendors', compact('vendors'));
     }
 
     public function deleteMessage(ContactMessage $message)
